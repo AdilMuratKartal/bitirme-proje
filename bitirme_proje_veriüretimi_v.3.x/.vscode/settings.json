@@ -6,7 +6,9 @@
     "python.testing.pytestEnabled": true,
     "python.defaultInterpreterPath": "${workspaceFolder}/.venv_gpu/Scripts/python.exe",
     "python.analysis.extraPaths": [
-        "${workspaceFolder}/.venv_gpu/Lib/site-packages"
+        "${workspaceFolder}/.venv_gpu/Lib/site-packages",
+        "${workspaceFolder}/local",
+        "${workspaceFolder}"
     ],
     "python.analysis.ignore": [
         "**/.venv_gpu/**",
