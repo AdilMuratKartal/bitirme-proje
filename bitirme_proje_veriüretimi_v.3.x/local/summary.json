@@ -1,0 +1,58 @@
+{
+  "config": {
+    "n_students": 200,
+    "n_weeks": 14,
+    "n_lookback": 3,
+    "topics": [
+      "Döngüler",
+      "Fonksiyonlar",
+      "Listeler",
+      "Sözlükler",
+      "Nesne Yönelimli Programlama",
+      "Dosya İşlemleri",
+      "Hata Yönetimi",
+      "Modüller"
+    ],
+    "faker_locale": "tr_TR"
+  },
+  "segment_ratios": {
+    "S1": 0.25,
+    "S2": 0.35,
+    "S3": 0.25,
+    "S4": 0.15
+  },
+  "mimo_shapes": {
+    "X_Time": [
+      200,
+      3,
+      2
+    ],
+    "X_Static": [
+      200,
+      5
+    ],
+    "y_risk": [
+      200
+    ],
+    "y_grade": [
+      200
+    ]
+  },
+  "hkar_shapes": {
+    "X_Sequence": [
+      200,
+      10,
+      3
+    ],
+    "X_UserHabit": [
+      200,
+      5
+    ]
+  },
+  "mimo_stats": {
+    "risk_mean": 0.3169094920158386,
+    "risk_std": 0.20213273167610168,
+    "grade_mean": 61.482696533203125,
+    "grade_std": 21.025999069213867
+  }
+}

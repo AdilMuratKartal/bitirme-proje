@@ -1,0 +1,8 @@
+.env
+.venv_gpu/
+.venv_cpu/
+__pycache__/
+*.pyc
+saved_models/
+outputs/
+local/csv_exports/

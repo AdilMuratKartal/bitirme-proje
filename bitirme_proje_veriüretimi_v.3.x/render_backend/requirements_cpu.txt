@@ -1,0 +1,29 @@
+# ============================================================
+# CPU INFERENCE ORTAMI — RENDER / DOCKER PRODUCTION
+# Python : 3.10.x
+# GPU / CUDA / cuDNN : YOK — gerekmez
+# Bu dosya Render'a deploy edilir
+# ============================================================
+
+tensorflow-cpu==2.10.0
+numpy==1.23.5
+pandas==2.2.3
+scikit-learn==1.5.2
+joblib==1.3.2
+h5py==3.8.0
+
+# FastAPI stack (Flask kaldırıldı — FastAPI kullanılıyor)
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+gunicorn==22.0.0
+
+# Database
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.9
+python-dotenv==1.0.1
+
+# Logging
+structlog==24.1.0
+
+# Firebase Auth (opsiyonel — JWT doğrulama için)
+firebase-admin==6.5.0
