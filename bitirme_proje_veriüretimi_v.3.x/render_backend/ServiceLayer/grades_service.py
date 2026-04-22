@@ -1,0 +1,177 @@
+"""
+render_backend/ServiceLayer/grades_service.py — Notlar Sayfası Servisi
+
+get_grades_page(uid, dao, orchestrator) → GradesPageResponse
+
+Devam eden kurslar: MIMO analizi + freshness.
+Biten kurslar: arşiv notlar (quiz/ödev/final from grade_grades).
+"""
+
+from __future__ import annotations
+
+import time
+from typing import List, Optional
+
+import pandas as pd
+
+from Moodle_DAO.moodle_dao_schema import MoodleDAO
+from api_gateway_orchestration.orchestration.orchestration import BatchOrchestrator
+from schemas import (
+    CompletedCourseDetail,
+    GradesPageResponse,
+    OngoingCourseGrade,
+)
+from ServiceLayer.common_utils import (
+    failure_risk_pct,
+    format_grade_summary,
+    get_risk_explanation,
+    get_risk_explanation_pending,
+)
+
+
+def get_grades_page(
+    uid: int,
+    dao: MoodleDAO,
+    orchestrator: BatchOrchestrator,
+) -> GradesPageResponse:
+    """
+    Akış:
+    1. Tüm kursları çek.
+    2. Öğrencinin not detaylarını çek.
+    3. Her kursu ongoing/completed olarak ayır (enddate < now → completed).
+    4. Ongoing kurslar için orchestrator üzerinden MIMO analizi al.
+    5. Completed kurslar için not ortalamalarını hesapla.
+    6. GradesPageResponse döndür.
+    """
+    now_ts = int(time.time())
+
+    courses_df = dao.get_courses()
+    grade_df   = dao.get_student_grade_details(uid)
+    hkrt_recs  = dao.get_hkrt_analysis(uid)
+
+    # Zayıf konu listesi (priority sıralı, top-3)
+    weak_topics: List[str] = [r["topic_id"] for r in hkrt_recs[:3]]
+
+    # MIMO analizi — orchestrator hot-path (FRESH → cache, STALE/PENDING → predict)
+    analysis = orchestrator.get_student_analysis(uid, dao)
+    mimo_data = analysis.get("data", {}).get("mimo_analysis") or {}
+    freshness = analysis.get("meta", {}).get("freshness", "pending")
+
+    ongoing_courses: List[OngoingCourseGrade]    = []
+    completed_courses: List[CompletedCourseDetail] = []
+
+    for _, course in courses_df.iterrows():
+        cid   = int(course["id"])
+        cname = str(course["fullname"])
+        end   = int(course["enddate"]) if pd.notna(course["enddate"]) else 0
+
+        if end > 0 and end < now_ts:
+            # ── Biten kurs ──────────────────────────────────────
+            completed_courses.append(
+                _build_completed(cid, cname, grade_df, mimo_data, weak_topics)
+            )
+        else:
+            # ── Devam eden kurs ─────────────────────────────────
+            ongoing_courses.append(
+                _build_ongoing(cid, cname, grade_df, mimo_data, freshness)
+            )
+
+    return GradesPageResponse(
+        ongoing_courses=ongoing_courses,
+        completed_courses=completed_courses,
+        user_id=uid,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────
+# Yardımcı: devam eden kurs satırı
+# ─────────────────────────────────────────────────────────────────
+
+def _build_ongoing(
+    cid: int,
+    cname: str,
+    grade_df: pd.DataFrame,
+    mimo_data: dict,
+    freshness: str,
+) -> OngoingCourseGrade:
+    # Gerçek güncel not — grade_items.itemtype = "course" bu kurs için
+    u_grades = grade_df[grade_df["courseid"] == cid] if not grade_df.empty else pd.DataFrame()
+    course_row = (
+        u_grades[u_grades["itemtype"] == "course"] if not u_grades.empty else pd.DataFrame()
+    )
+    current_grade: Optional[float] = (
+        float(course_row.iloc[0]["finalgrade"])
+        if not course_row.empty and pd.notna(course_row.iloc[0]["finalgrade"])
+        else None
+    )
+
+    # MIMO alanları — PENDING ise None
+    risk_score      = mimo_data.get("risk_score")
+    risk_level      = mimo_data.get("risk_level")
+    predicted_grade = mimo_data.get("predicted_grade")
+
+    frp: Optional[float] = (
+        failure_risk_pct(risk_score) if risk_score is not None else None
+    )
+
+    if risk_score is not None and predicted_grade is not None:
+        explanation = get_risk_explanation(risk_score, predicted_grade, cname)
+    else:
+        explanation = get_risk_explanation_pending(cname)
+
+    return OngoingCourseGrade(
+        course_id=cid,
+        course_name=cname,
+        current_grade=current_grade,
+        risk_score=risk_score,
+        risk_level=risk_level,
+        predicted_grade=predicted_grade,
+        failure_risk_percentage=frp,
+        freshness_status=freshness,
+        explanation_text=explanation,
+    )
+
+
+# ─────────────────────────────────────────────────────────────────
+# Yardımcı: biten kurs satırı
+# ─────────────────────────────────────────────────────────────────
+
+def _build_completed(
+    cid: int,
+    cname: str,
+    grade_df: pd.DataFrame,
+    mimo_data: dict,
+    weak_topics: List[str],
+) -> CompletedCourseDetail:
+    u_grades = grade_df[grade_df["courseid"] == cid] if not grade_df.empty else pd.DataFrame()
+
+    quiz_rows   = u_grades[u_grades["itemtype"] == "quiz"]   if not u_grades.empty else pd.DataFrame()
+    assign_rows = u_grades[u_grades["itemtype"] == "assign"] if not u_grades.empty else pd.DataFrame()
+    course_rows = u_grades[u_grades["itemtype"] == "course"] if not u_grades.empty else pd.DataFrame()
+
+    quiz_avg: Optional[float] = (
+        round(float(quiz_rows["finalgrade"].dropna().mean()), 1)
+        if not quiz_rows.empty and quiz_rows["finalgrade"].notna().any()
+        else None
+    )
+    assign_avg: Optional[float] = (
+        round(float(assign_rows["finalgrade"].dropna().mean()), 1)
+        if not assign_rows.empty and assign_rows["finalgrade"].notna().any()
+        else None
+    )
+    final_grade: Optional[float] = (
+        round(float(course_rows.iloc[0]["finalgrade"]), 1)
+        if not course_rows.empty and pd.notna(course_rows.iloc[0]["finalgrade"])
+        else None
+    )
+
+    return CompletedCourseDetail(
+        course_id=cid,
+        course_name=cname,
+        quiz_avg=quiz_avg,
+        assign_avg=assign_avg,
+        final_grade=final_grade,
+        grade_summary=format_grade_summary(final_grade, quiz_avg, assign_avg),
+        mimo_risk_score=mimo_data.get("risk_score"),
+        hkar_weak_topics=weak_topics,
+    )

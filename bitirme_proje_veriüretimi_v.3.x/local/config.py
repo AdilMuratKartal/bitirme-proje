@@ -23,8 +23,8 @@ import datetime
 # ─────────────────────────────────────────────────────────────────
 @dataclass
 class GeneralConfig:
-    seed:                  int  = 42
-    n_students:            int  = 2000
+    seed:                  int  = 43
+    n_students:            int  = 10000
     n_weeks:               int  = 14
     n_courses:             int  = 15
     n_modules_per_course:  int  = 15    # Kural 1
@@ -167,7 +167,7 @@ class SegmentProfile:
     module_gap_days:      Tuple[float, float] = (1.0, 3.0)
 
     # ── Soru denemesi ─────────────────────────────────────────────
-    n_question_attempts:  Tuple[int, int]     = (20, 40)
+    answered_ratio:       Tuple[float, float] = (0.85, 1.0)   # Soruyu boş bırakmama olasılığı
     correct_answer_prob:  Tuple[float, float] = (0.65, 0.85)
     topic_weakness_count: int                 = 1
     steps_per_question:   Tuple[int, int]     = (1, 4)
@@ -205,10 +205,10 @@ SEGMENT_PROFILES: Dict[str, SegmentProfile] = {
         quiz_reattempt_prob   = 0.03,
         quiz_duration_range   = (45, 60),
 
-        completion_prob       = 0.95,
+        completion_prob       = 1.0,    # S1 hiçbir modülü atlamaz (Kural 5)
         module_gap_days       = (0.5, 2.0),
 
-        n_question_attempts   = (35, 50),
+        answered_ratio        = (0.92, 1.0),
         correct_answer_prob   = (0.82, 0.96),
         topic_weakness_count  = 0,
         steps_per_question    = (1, 2),
@@ -241,10 +241,10 @@ SEGMENT_PROFILES: Dict[str, SegmentProfile] = {
         quiz_reattempt_prob   = 0.12,
         quiz_duration_range   = (30, 58),
 
-        completion_prob       = 0.68,
+        completion_prob       = 0.75,
         module_gap_days       = (2.0, 5.0),
 
-        n_question_attempts   = (18, 35),
+        answered_ratio        = (0.80, 0.95),
         correct_answer_prob   = (0.55, 0.75),
         topic_weakness_count  = 2,
         steps_per_question    = (1, 5),
@@ -277,10 +277,10 @@ SEGMENT_PROFILES: Dict[str, SegmentProfile] = {
         quiz_reattempt_prob   = 0.18,
         quiz_duration_range   = (20, 55),
 
-        completion_prob       = 0.42,
+        completion_prob       = 0.50,
         module_gap_days       = (5.0, 14.0),
 
-        n_question_attempts   = (10, 28),
+        answered_ratio        = (0.60, 0.85),
         correct_answer_prob   = (0.35, 0.60),
         topic_weakness_count  = 3,
         steps_per_question    = (2, 7),
@@ -316,7 +316,7 @@ SEGMENT_PROFILES: Dict[str, SegmentProfile] = {
         completion_prob       = 0.18,
         module_gap_days       = (10.0, 25.0),
 
-        n_question_attempts   = (3, 12),
+        answered_ratio        = (0.30, 0.65),
         correct_answer_prob   = (0.18, 0.40),
         topic_weakness_count  = 5,
         steps_per_question    = (1, 3),
@@ -343,7 +343,7 @@ MDL_SCHEMA: Dict[str, List[str]] = {
     "mdl_assign_submission":         ["id", "userid", "assignment", "timemodified",
                                       "status", "delay_hours"],
     "mdl_logstore_standard_log":     ["id", "userid", "courseid", "component",
-                                      "action", "timecreated"],
+                                      "action", "objectid", "timecreated"],
     "mdl_quiz":                      ["id", "course", "name", "timeopen",
                                       "timeclose", "timelimit"],
     "mdl_quiz_attempts":             ["id", "quiz", "userid", "uniqueid",

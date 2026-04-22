@@ -1,0 +1,151 @@
+id,category,name,qtype,timecreated
+1,1,Soru 1 — Temel Kavramlar,truefalse,1707109200
+2,1,Soru 2 — Temel Kavramlar,shortanswer,1707109200
+3,1,Soru 3 — Temel Kavramlar,multichoice,1707109200
+4,1,Soru 4 — Temel Kavramlar,truefalse,1707109200
+5,1,Soru 5 — Temel Kavramlar,shortanswer,1707109200
+6,1,Soru 6 — Temel Kavramlar,multichoice,1707109200
+7,1,Soru 7 — Temel Kavramlar,truefalse,1707109200
+8,1,Soru 8 — Temel Kavramlar,shortanswer,1707109200
+9,1,Soru 9 — Temel Kavramlar,multichoice,1707109200
+10,1,Soru 10 — Temel Kavramlar,truefalse,1707109200
+11,2,Soru 1 — Değişkenler ve Veri Tipleri,truefalse,1707109200
+12,2,Soru 2 — Değişkenler ve Veri Tipleri,shortanswer,1707109200
+13,2,Soru 3 — Değişkenler ve Veri Tipleri,multichoice,1707109200
+14,2,Soru 4 — Değişkenler ve Veri Tipleri,truefalse,1707109200
+15,2,Soru 5 — Değişkenler ve Veri Tipleri,shortanswer,1707109200
+16,2,Soru 6 — Değişkenler ve Veri Tipleri,multichoice,1707109200
+17,2,Soru 7 — Değişkenler ve Veri Tipleri,truefalse,1707109200
+18,2,Soru 8 — Değişkenler ve Veri Tipleri,shortanswer,1707109200
+19,2,Soru 9 — Değişkenler ve Veri Tipleri,multichoice,1707109200
+20,2,Soru 10 — Değişkenler ve Veri Tipleri,truefalse,1707109200
+21,3,Soru 1 — Kontrol Akışı,truefalse,1707109200
+22,3,Soru 2 — Kontrol Akışı,shortanswer,1707109200
+23,3,Soru 3 — Kontrol Akışı,multichoice,1707109200
+24,3,Soru 4 — Kontrol Akışı,truefalse,1707109200
+25,3,Soru 5 — Kontrol Akışı,shortanswer,1707109200
+26,3,Soru 6 — Kontrol Akışı,multichoice,1707109200
+27,3,Soru 7 — Kontrol Akışı,truefalse,1707109200
+28,3,Soru 8 — Kontrol Akışı,shortanswer,1707109200
+29,3,Soru 9 — Kontrol Akışı,multichoice,1707109200
+30,3,Soru 10 — Kontrol Akışı,truefalse,1707109200
+31,4,Soru 1 — Döngüler,truefalse,1707109200
+32,4,Soru 2 — Döngüler,shortanswer,1707109200
+33,4,Soru 3 — Döngüler,multichoice,1707109200
+34,4,Soru 4 — Döngüler,truefalse,1707109200
+35,4,Soru 5 — Döngüler,shortanswer,1707109200
+36,4,Soru 6 — Döngüler,multichoice,1707109200
+37,4,Soru 7 — Döngüler,truefalse,1707109200
+38,4,Soru 8 — Döngüler,shortanswer,1707109200
+39,4,Soru 9 — Döngüler,multichoice,1707109200
+40,4,Soru 10 — Döngüler,truefalse,1707109200
+41,5,Soru 1 — Fonksiyonlar,truefalse,1707109200
+42,5,Soru 2 — Fonksiyonlar,shortanswer,1707109200
+43,5,Soru 3 — Fonksiyonlar,multichoice,1707109200
+44,5,Soru 4 — Fonksiyonlar,truefalse,1707109200
+45,5,Soru 5 — Fonksiyonlar,shortanswer,1707109200
+46,5,Soru 6 — Fonksiyonlar,multichoice,1707109200
+47,5,Soru 7 — Fonksiyonlar,truefalse,1707109200
+48,5,Soru 8 — Fonksiyonlar,shortanswer,1707109200
+49,5,Soru 9 — Fonksiyonlar,multichoice,1707109200
+50,5,Soru 10 — Fonksiyonlar,truefalse,1707109200
+51,6,Soru 1 — Listeler ve Diziler,truefalse,1707109200
+52,6,Soru 2 — Listeler ve Diziler,shortanswer,1707109200
+53,6,Soru 3 — Listeler ve Diziler,multichoice,1707109200
+54,6,Soru 4 — Listeler ve Diziler,truefalse,1707109200
+55,6,Soru 5 — Listeler ve Diziler,shortanswer,1707109200
+56,6,Soru 6 — Listeler ve Diziler,multichoice,1707109200
+57,6,Soru 7 — Listeler ve Diziler,truefalse,1707109200
+58,6,Soru 8 — Listeler ve Diziler,shortanswer,1707109200
+59,6,Soru 9 — Listeler ve Diziler,multichoice,1707109200
+60,6,Soru 10 — Listeler ve Diziler,truefalse,1707109200
+61,7,Soru 1 — Sözlükler ve Kümeler,truefalse,1707109200
+62,7,Soru 2 — Sözlükler ve Kümeler,shortanswer,1707109200
+63,7,Soru 3 — Sözlükler ve Kümeler,multichoice,1707109200
+64,7,Soru 4 — Sözlükler ve Kümeler,truefalse,1707109200
+65,7,Soru 5 — Sözlükler ve Kümeler,shortanswer,1707109200
+66,7,Soru 6 — Sözlükler ve Kümeler,multichoice,1707109200
+67,7,Soru 7 — Sözlükler ve Kümeler,truefalse,1707109200
+68,7,Soru 8 — Sözlükler ve Kümeler,shortanswer,1707109200
+69,7,Soru 9 — Sözlükler ve Kümeler,multichoice,1707109200
+70,7,Soru 10 — Sözlükler ve Kümeler,truefalse,1707109200
+71,8,Soru 1 — Nesne Yönelimli Programlama,truefalse,1707109200
+72,8,Soru 2 — Nesne Yönelimli Programlama,shortanswer,1707109200
+73,8,Soru 3 — Nesne Yönelimli Programlama,multichoice,1707109200
+74,8,Soru 4 — Nesne Yönelimli Programlama,truefalse,1707109200
+75,8,Soru 5 — Nesne Yönelimli Programlama,shortanswer,1707109200
+76,8,Soru 6 — Nesne Yönelimli Programlama,multichoice,1707109200
+77,8,Soru 7 — Nesne Yönelimli Programlama,truefalse,1707109200
+78,8,Soru 8 — Nesne Yönelimli Programlama,shortanswer,1707109200
+79,8,Soru 9 — Nesne Yönelimli Programlama,multichoice,1707109200
+80,8,Soru 10 — Nesne Yönelimli Programlama,truefalse,1707109200
+81,9,Soru 1 — Hata Yönetimi,truefalse,1707109200
+82,9,Soru 2 — Hata Yönetimi,shortanswer,1707109200
+83,9,Soru 3 — Hata Yönetimi,multichoice,1707109200
+84,9,Soru 4 — Hata Yönetimi,truefalse,1707109200
+85,9,Soru 5 — Hata Yönetimi,shortanswer,1707109200
+86,9,Soru 6 — Hata Yönetimi,multichoice,1707109200
+87,9,Soru 7 — Hata Yönetimi,truefalse,1707109200
+88,9,Soru 8 — Hata Yönetimi,shortanswer,1707109200
+89,9,Soru 9 — Hata Yönetimi,multichoice,1707109200
+90,9,Soru 10 — Hata Yönetimi,truefalse,1707109200
+91,10,Soru 1 — Dosya İşlemleri,truefalse,1707109200
+92,10,Soru 2 — Dosya İşlemleri,shortanswer,1707109200
+93,10,Soru 3 — Dosya İşlemleri,multichoice,1707109200
+94,10,Soru 4 — Dosya İşlemleri,truefalse,1707109200
+95,10,Soru 5 — Dosya İşlemleri,shortanswer,1707109200
+96,10,Soru 6 — Dosya İşlemleri,multichoice,1707109200
+97,10,Soru 7 — Dosya İşlemleri,truefalse,1707109200
+98,10,Soru 8 — Dosya İşlemleri,shortanswer,1707109200
+99,10,Soru 9 — Dosya İşlemleri,multichoice,1707109200
+100,10,Soru 10 — Dosya İşlemleri,truefalse,1707109200
+101,11,Soru 1 — Modüller ve Paketler,truefalse,1707109200
+102,11,Soru 2 — Modüller ve Paketler,shortanswer,1707109200
+103,11,Soru 3 — Modüller ve Paketler,multichoice,1707109200
+104,11,Soru 4 — Modüller ve Paketler,truefalse,1707109200
+105,11,Soru 5 — Modüller ve Paketler,shortanswer,1707109200
+106,11,Soru 6 — Modüller ve Paketler,multichoice,1707109200
+107,11,Soru 7 — Modüller ve Paketler,truefalse,1707109200
+108,11,Soru 8 — Modüller ve Paketler,shortanswer,1707109200
+109,11,Soru 9 — Modüller ve Paketler,multichoice,1707109200
+110,11,Soru 10 — Modüller ve Paketler,truefalse,1707109200
+111,12,Soru 1 — Veritabanı Erişimi,truefalse,1707109200
+112,12,Soru 2 — Veritabanı Erişimi,shortanswer,1707109200
+113,12,Soru 3 — Veritabanı Erişimi,multichoice,1707109200
+114,12,Soru 4 — Veritabanı Erişimi,truefalse,1707109200
+115,12,Soru 5 — Veritabanı Erişimi,shortanswer,1707109200
+116,12,Soru 6 — Veritabanı Erişimi,multichoice,1707109200
+117,12,Soru 7 — Veritabanı Erişimi,truefalse,1707109200
+118,12,Soru 8 — Veritabanı Erişimi,shortanswer,1707109200
+119,12,Soru 9 — Veritabanı Erişimi,multichoice,1707109200
+120,12,Soru 10 — Veritabanı Erişimi,truefalse,1707109200
+121,13,Soru 1 — Web API Kullanımı,truefalse,1707109200
+122,13,Soru 2 — Web API Kullanımı,shortanswer,1707109200
+123,13,Soru 3 — Web API Kullanımı,multichoice,1707109200
+124,13,Soru 4 — Web API Kullanımı,truefalse,1707109200
+125,13,Soru 5 — Web API Kullanımı,shortanswer,1707109200
+126,13,Soru 6 — Web API Kullanımı,multichoice,1707109200
+127,13,Soru 7 — Web API Kullanımı,truefalse,1707109200
+128,13,Soru 8 — Web API Kullanımı,shortanswer,1707109200
+129,13,Soru 9 — Web API Kullanımı,multichoice,1707109200
+130,13,Soru 10 — Web API Kullanımı,truefalse,1707109200
+131,14,Soru 1 — Test ve Debugging,truefalse,1707109200
+132,14,Soru 2 — Test ve Debugging,shortanswer,1707109200
+133,14,Soru 3 — Test ve Debugging,multichoice,1707109200
+134,14,Soru 4 — Test ve Debugging,truefalse,1707109200
+135,14,Soru 5 — Test ve Debugging,shortanswer,1707109200
+136,14,Soru 6 — Test ve Debugging,multichoice,1707109200
+137,14,Soru 7 — Test ve Debugging,truefalse,1707109200
+138,14,Soru 8 — Test ve Debugging,shortanswer,1707109200
+139,14,Soru 9 — Test ve Debugging,multichoice,1707109200
+140,14,Soru 10 — Test ve Debugging,truefalse,1707109200
+141,15,Soru 1 — Proje Uygulaması,truefalse,1707109200
+142,15,Soru 2 — Proje Uygulaması,shortanswer,1707109200
+143,15,Soru 3 — Proje Uygulaması,multichoice,1707109200
+144,15,Soru 4 — Proje Uygulaması,truefalse,1707109200
+145,15,Soru 5 — Proje Uygulaması,shortanswer,1707109200
+146,15,Soru 6 — Proje Uygulaması,multichoice,1707109200
+147,15,Soru 7 — Proje Uygulaması,truefalse,1707109200
+148,15,Soru 8 — Proje Uygulaması,shortanswer,1707109200
+149,15,Soru 9 — Proje Uygulaması,multichoice,1707109200
+150,15,Soru 10 — Proje Uygulaması,truefalse,1707109200

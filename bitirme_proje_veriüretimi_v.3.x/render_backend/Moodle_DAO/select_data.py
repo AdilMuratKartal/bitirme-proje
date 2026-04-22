@@ -156,3 +156,113 @@ class SelectMixin:
             return dict(result._mapping)
         finally:
             session.close()
+
+    # ─────────────────────────────────────────────────────────────
+    # ServiceLayer için ek SELECT metodları
+    # ─────────────────────────────────────────────────────────────
+
+    def get_courses(self) -> pd.DataFrame:
+        """Tüm kurs satırlarını döner (id, shortname, fullname, startdate, enddate)."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT id, shortname, fullname, startdate, enddate FROM mdl_course"),
+                session.bind,
+            )
+        finally:
+            session.close()
+
+    def get_student_grade_details(self, userid: int) -> pd.DataFrame:
+        """
+        Öğrencinin tüm not satırlarını mdl_grade_items ile JOIN ederek döner.
+        itemtype: "course" / "quiz" / "assign"
+        """
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text(
+                    "SELECT gg.userid, gg.itemid, gg.finalgrade, gg.timemodified, "
+                    "       gi.courseid, gi.itemname, gi.itemtype, gi.grademax "
+                    "FROM mdl_grade_grades gg "
+                    "JOIN mdl_grade_items gi ON gi.id = gg.itemid "
+                    "WHERE gg.userid = :uid"
+                ),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_quiz_events(self, userid: int) -> pd.DataFrame:
+        """
+        Tüm quiz'leri, öğrencinin girişim durumu (sumgrades, state) ile birlikte döner.
+        Girişim yapmamışsa sumgrades/state NULL olur.
+        """
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text(
+                    "SELECT q.id, q.course, q.name, q.timeopen, q.timeclose, "
+                    "       qa.sumgrades, qa.state "
+                    "FROM mdl_quiz q "
+                    "LEFT JOIN mdl_quiz_attempts qa "
+                    "       ON qa.quiz = q.id AND qa.userid = :uid"
+                ),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_assign_events(self, userid: int) -> pd.DataFrame:
+        """
+        Tüm ödevleri, öğrencinin teslim durumu (status, timemodified) ile birlikte döner.
+        Teslim yoksa status/timemodified NULL olur.
+        """
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text(
+                    "SELECT a.id, a.course, a.name, a.duedate, "
+                    "       a.allowsubmissionsfromdate, "
+                    "       s.status, s.timemodified "
+                    "FROM mdl_assign a "
+                    "LEFT JOIN mdl_assign_submission s "
+                    "       ON s.assignment = a.id AND s.userid = :uid"
+                ),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_activity_logs_recent(self, userid: int, since_ts: int) -> pd.DataFrame:
+        """
+        Öğrencinin since_ts'den sonraki log kayıtlarını döner (yeni → eski sıralı).
+        since_ts=0 → tüm kayıtlar.
+        """
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text(
+                    "SELECT userid, courseid, component, action, objectid, timecreated "
+                    "FROM mdl_logstore_standard_log "
+                    "WHERE userid = :uid AND timecreated >= :since "
+                    "ORDER BY timecreated DESC"
+                ),
+                session.bind,
+                params={"uid": userid, "since": since_ts},
+            )
+        finally:
+            session.close()
+
+    def get_course_modules_all(self) -> pd.DataFrame:
+        """Tüm kurs modüllerini döner (id, course, module, content_type, topic)."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT id, course, module, content_type, topic FROM mdl_course_modules"),
+                session.bind,
+            )
+        finally:
+            session.close()

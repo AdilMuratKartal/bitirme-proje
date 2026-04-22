@@ -49,12 +49,18 @@ def build_x_time(
         .size()
         .reset_index(name="clicks")
     )
+    # Engine tablosunda _week yoksa timemodified'dan türet
+    if "_week" not in grade_hist_df.columns:
+        from engine import TimeCalc
+        _BASE_TS = int(TimeCalc.week_start(1).timestamp())
+        grade_hist_df = grade_hist_df.copy()
+        grade_hist_df["_week"] = ((grade_hist_df["timemodified"] - _BASE_TS) // (7 * 86_400) + 1).clip(lower=1)
     weekly_grades = grade_hist_df[["userid", "_week", "finalgrade"]].copy()
 
     records = []
     for uid in uids:
-        u_cl = weekly_clicks[weekly_clicks["userid"] == uid].set_index("_week")["clicks"]
-        u_gr = weekly_grades[weekly_grades["userid"] == uid].set_index("_week")["finalgrade"]
+        u_cl = weekly_clicks[weekly_clicks["userid"] == uid].groupby("_week")["clicks"].sum()
+        u_gr = weekly_grades[weekly_grades["userid"] == uid].groupby("_week")["finalgrade"].mean()
 
         row        = {"userid": uid}
         max_week   = CFG.general.n_weeks
@@ -122,7 +128,7 @@ def build_x_static(
     delay = assign_sub_df.groupby("userid")["delay_hours"].mean().reindex(uids, fill_value=48.0)
 
     # Anlık not
-    cur_grade = grade_df.set_index("userid")["finalgrade"].reindex(uids, fill_value=50.0)
+    cur_grade = grade_df.groupby("userid")["finalgrade"].mean().reindex(uids, fill_value=50.0)   # BUG-3 FIX: duplicate userid index → crash önlemi
 
     # Quiz süresi
     quiz_eff  = quiz_att_df.groupby("userid")["duration_minutes"].mean().reindex(uids, fill_value=3.0)
@@ -154,7 +160,7 @@ def build_mimo_targets(
     uids      = _uids()
     n_modules = len(course_mod_df)
 
-    grade     = grade_df.set_index("userid")["finalgrade"].reindex(uids, fill_value=50.0)
+    grade     = grade_df.groupby("userid")["finalgrade"].mean().reindex(uids, fill_value=50.0)   # BUG-3 FIX: duplicate userid index → crash önlemi
     delay     = assign_sub_df.groupby("userid")["delay_hours"].mean().reindex(uids, fill_value=48.0)
     completed = completion_df.groupby("userid").size().reindex(uids, fill_value=0)
     comp      = (completed / max(n_modules, 1)).clip(0, 1)

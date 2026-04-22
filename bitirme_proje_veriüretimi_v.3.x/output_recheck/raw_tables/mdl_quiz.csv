@@ -1,0 +1,46 @@
+id,course,name,timeopen,timeclose,timelimit
+1,1,Quiz 1 — Yazılım Geliştirme Temelleri Hafta 4,1709132400,1709222400,3600
+2,3,Quiz 2 — Nesne Yönelimli Programlama Hafta 4,1709060400,1709172000,3600
+3,5,Quiz 3 — Web Teknolojileri Hafta 4,1709046000,1709179200,3600
+4,7,Quiz 4 — Bilgisayar Ağları Hafta 4,1709226000,1709398800,3600
+5,9,Quiz 5 — Makine Öğrenmesi Hafta 4,1709146800,1709301600,3600
+6,11,Quiz 6 — Siber Güvenlik Hafta 4,1709143200,1709251200,3600
+7,13,Quiz 7 — Bulut Bilişim Hafta 4,1709226000,1709344800,3600
+8,15,Quiz 8 — İnsan-Bilgisayar Etkileşimi Hafta 4,1709132400,1709229600,3600
+9,2,Quiz 9 — Veri Yapıları ve Algoritmalar Hafta 5,1709654400,1709762400,3600
+10,4,Quiz 10 — Veritabanı Yönetim Sistemleri Hafta 5,1709751600,1709870400,3600
+11,6,Quiz 11 — İşletim Sistemleri Hafta 5,1709647200,1709776800,3600
+12,8,Quiz 12 — Yazılım Mühendisliği Hafta 5,1709665200,1709820000,3600
+13,10,Quiz 13 — Yapay Zeka Hafta 5,1709730000,1709895600,3600
+14,12,Quiz 14 — Mobil Uygulama Geliştirme Hafta 5,1709740800,1709859600,3600
+15,14,Quiz 15 — Veri Analitiği Hafta 5,1709654400,1709769600,3600
+16,1,Quiz 16 — Yazılım Geliştirme Temelleri Hafta 8,1711461600,1711548000,3600
+17,3,Quiz 17 — Nesne Yönelimli Programlama Hafta 8,1711483200,1711627200,3600
+18,5,Quiz 18 — Web Teknolojileri Hafta 8,1711479600,1711573200,3600
+19,7,Quiz 19 — Bilgisayar Ağları Hafta 8,1711479600,1711616400,3600
+20,9,Quiz 20 — Makine Öğrenmesi Hafta 8,1711648800,1711735200,3600
+21,11,Quiz 21 — Siber Güvenlik Hafta 8,1711555200,1711702800,3600
+22,13,Quiz 22 — Bulut Bilişim Hafta 8,1711648800,1711771200,3600
+23,15,Quiz 23 — İnsan-Bilgisayar Etkileşimi Hafta 8,1711652400,1711764000,3600
+24,2,Quiz 24 — Veri Yapıları ve Algoritmalar Hafta 9,1712235600,1712390400,3600
+25,4,Quiz 25 — Veritabanı Yönetim Sistemleri Hafta 9,1712062800,1712210400,3600
+26,6,Quiz 26 — İşletim Sistemleri Hafta 9,1712170800,1712296800,3600
+27,8,Quiz 27 — Yazılım Mühendisliği Hafta 9,1712235600,1712372400,3600
+28,10,Quiz 28 — Yapay Zeka Hafta 9,1712156400,1712307600,3600
+29,12,Quiz 29 — Mobil Uygulama Geliştirme Hafta 9,1712160000,1712296800,3600
+30,14,Quiz 30 — Veri Analitiği Hafta 9,1712253600,1712394000,3600
+31,1,Quiz 31 — Yazılım Geliştirme Temelleri Hafta 13,1714669200,1714798800,3600
+32,3,Quiz 32 — Nesne Yönelimli Programlama Hafta 13,1714579200,1714694400,3600
+33,5,Quiz 33 — Web Teknolojileri Hafta 13,1714582800,1714741200,3600
+34,7,Quiz 34 — Bilgisayar Ağları Hafta 13,1714593600,1714730400,3600
+35,9,Quiz 35 — Makine Öğrenmesi Hafta 13,1714654800,1714755600,3600
+36,11,Quiz 36 — Siber Güvenlik Hafta 13,1714593600,1714687200,3600
+37,13,Quiz 37 — Bulut Bilişim Hafta 13,1714489200,1714611600,3600
+38,15,Quiz 38 — İnsan-Bilgisayar Etkileşimi Hafta 13,1714500000,1714611600,3600
+39,2,Quiz 39 — Veri Yapıları ve Algoritmalar Hafta 14,1715176800,1715270400,3600
+40,4,Quiz 40 — Veritabanı Yönetim Sistemleri Hafta 14,1715284800,1715425200,3600
+41,6,Quiz 41 — İşletim Sistemleri Hafta 14,1715277600,1715396400,3600
+42,8,Quiz 42 — Yazılım Mühendisliği Hafta 14,1715284800,1715396400,3600
+43,10,Quiz 43 — Yapay Zeka Hafta 14,1715176800,1715284800,3600
+44,12,Quiz 44 — Mobil Uygulama Geliştirme Hafta 14,1715097600,1715220000,3600
+45,14,Quiz 45 — Veri Analitiği Hafta 14,1715266800,1715382000,3600

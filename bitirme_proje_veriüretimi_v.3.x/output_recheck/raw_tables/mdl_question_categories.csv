@@ -1,0 +1,16 @@
+id,name,parent,info
+1,Yazılım Geliştirme Temelleri — Soru Bankası,0,Temel Kavramlar
+2,Veri Yapıları ve Algoritmalar — Soru Bankası,0,Değişkenler ve Veri Tipleri
+3,Nesne Yönelimli Programlama — Soru Bankası,0,Kontrol Akışı
+4,Veritabanı Yönetim Sistemleri — Soru Bankası,0,Döngüler
+5,Web Teknolojileri — Soru Bankası,0,Fonksiyonlar
+6,İşletim Sistemleri — Soru Bankası,0,Listeler ve Diziler
+7,Bilgisayar Ağları — Soru Bankası,0,Sözlükler ve Kümeler
+8,Yazılım Mühendisliği — Soru Bankası,0,Nesne Yönelimli Programlama
+9,Makine Öğrenmesi — Soru Bankası,0,Hata Yönetimi
+10,Yapay Zeka — Soru Bankası,0,Dosya İşlemleri
+11,Siber Güvenlik — Soru Bankası,0,Modüller ve Paketler
+12,Mobil Uygulama Geliştirme — Soru Bankası,0,Veritabanı Erişimi
+13,Bulut Bilişim — Soru Bankası,0,Web API Kullanımı
+14,Veri Analitiği — Soru Bankası,0,Test ve Debugging
+15,İnsan-Bilgisayar Etkileşimi — Soru Bankası,0,Proje Uygulaması

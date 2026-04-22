@@ -1,0 +1,226 @@
+id,course,module,instance,completion,added,sequence,component,content_type,topic
+1,1,1,1,1,1707109200,1,mod_quiz,Ödev,Temel Kavramlar
+2,1,2,2,1,1707109200,2,mod_url,İzleme,Değişkenler ve Veri Tipleri
+3,1,3,3,1,1707109200,3,mod_page,Okuma,Kontrol Akışı
+4,1,4,4,1,1707109200,4,mod_page,Okuma,Döngüler
+5,1,5,5,1,1707109200,5,mod_forum,Forum,Fonksiyonlar
+6,1,6,6,1,1707109200,6,mod_folder,Okuma,Listeler ve Diziler
+7,1,7,7,1,1707109200,7,mod_book,Okuma,Sözlükler ve Kümeler
+8,1,8,8,1,1707109200,8,mod_lesson,İzleme,Nesne Yönelimli Programlama
+9,1,9,9,1,1707109200,9,mod_quiz,Ödev,Hata Yönetimi
+10,1,10,10,1,1707109200,10,mod_resource,Okuma,Dosya İşlemleri
+11,1,11,11,1,1707109200,11,mod_lesson,İzleme,Modüller ve Paketler
+12,1,12,12,1,1707109200,12,mod_forum,Forum,Veritabanı Erişimi
+13,1,13,13,1,1707109200,13,mod_bigbluebuttonbn,İzleme,Web API Kullanımı
+14,1,14,14,1,1707109200,14,mod_url,İzleme,Test ve Debugging
+15,1,15,15,1,1707109200,15,mod_url,İzleme,Proje Uygulaması
+16,2,1,16,1,1707109200,1,mod_page,Okuma,Temel Kavramlar
+17,2,2,17,1,1707109200,2,mod_lesson,İzleme,Değişkenler ve Veri Tipleri
+18,2,3,18,1,1707109200,3,mod_workshop,Ödev,Kontrol Akışı
+19,2,4,19,1,1707109200,4,mod_book,Okuma,Döngüler
+20,2,5,20,1,1707109200,5,mod_resource,Okuma,Fonksiyonlar
+21,2,6,21,1,1707109200,6,mod_url,İzleme,Listeler ve Diziler
+22,2,7,22,1,1707109200,7,mod_book,Okuma,Sözlükler ve Kümeler
+23,2,8,23,1,1707109200,8,mod_lesson,İzleme,Nesne Yönelimli Programlama
+24,2,9,24,1,1707109200,9,mod_forum,Forum,Hata Yönetimi
+25,2,10,25,1,1707109200,10,mod_resource,Okuma,Dosya İşlemleri
+26,2,11,26,1,1707109200,11,mod_book,Okuma,Modüller ve Paketler
+27,2,12,27,1,1707109200,12,mod_url,İzleme,Veritabanı Erişimi
+28,2,13,28,1,1707109200,13,mod_lesson,İzleme,Web API Kullanımı
+29,2,14,29,1,1707109200,14,mod_bigbluebuttonbn,İzleme,Test ve Debugging
+30,2,15,30,1,1707109200,15,mod_url,İzleme,Proje Uygulaması
+31,3,1,31,1,1707109200,1,mod_assign,Ödev,Temel Kavramlar
+32,3,2,32,1,1707109200,2,mod_forum,Forum,Değişkenler ve Veri Tipleri
+33,3,3,33,1,1707109200,3,mod_forum,Forum,Kontrol Akışı
+34,3,4,34,1,1707109200,4,mod_bigbluebuttonbn,İzleme,Döngüler
+35,3,5,35,1,1707109200,5,mod_quiz,Ödev,Fonksiyonlar
+36,3,6,36,1,1707109200,6,mod_book,Okuma,Listeler ve Diziler
+37,3,7,37,1,1707109200,7,mod_url,İzleme,Sözlükler ve Kümeler
+38,3,8,38,1,1707109200,8,mod_url,İzleme,Nesne Yönelimli Programlama
+39,3,9,39,1,1707109200,9,mod_folder,Okuma,Hata Yönetimi
+40,3,10,40,1,1707109200,10,mod_page,Okuma,Dosya İşlemleri
+41,3,11,41,1,1707109200,11,mod_url,İzleme,Modüller ve Paketler
+42,3,12,42,1,1707109200,12,mod_forum,Forum,Veritabanı Erişimi
+43,3,13,43,1,1707109200,13,mod_quiz,Ödev,Web API Kullanımı
+44,3,14,44,1,1707109200,14,mod_book,Okuma,Test ve Debugging
+45,3,15,45,1,1707109200,15,mod_forum,Forum,Proje Uygulaması
+46,4,1,46,1,1707109200,1,mod_forum,Forum,Temel Kavramlar
+47,4,2,47,1,1707109200,2,mod_forum,Forum,Değişkenler ve Veri Tipleri
+48,4,3,48,1,1707109200,3,mod_bigbluebuttonbn,İzleme,Kontrol Akışı
+49,4,4,49,1,1707109200,4,mod_workshop,Ödev,Döngüler
+50,4,5,50,1,1707109200,5,mod_book,Okuma,Fonksiyonlar
+51,4,6,51,1,1707109200,6,mod_assign,Ödev,Listeler ve Diziler
+52,4,7,52,1,1707109200,7,mod_workshop,Ödev,Sözlükler ve Kümeler
+53,4,8,53,1,1707109200,8,mod_lesson,İzleme,Nesne Yönelimli Programlama
+54,4,9,54,1,1707109200,9,mod_page,Okuma,Hata Yönetimi
+55,4,10,55,1,1707109200,10,mod_lesson,İzleme,Dosya İşlemleri
+56,4,11,56,1,1707109200,11,mod_resource,Okuma,Modüller ve Paketler
+57,4,12,57,1,1707109200,12,mod_page,Okuma,Veritabanı Erişimi
+58,4,13,58,1,1707109200,13,mod_workshop,Ödev,Web API Kullanımı
+59,4,14,59,1,1707109200,14,mod_workshop,Ödev,Test ve Debugging
+60,4,15,60,1,1707109200,15,mod_page,Okuma,Proje Uygulaması
+61,5,1,61,1,1707109200,1,mod_resource,Okuma,Temel Kavramlar
+62,5,2,62,1,1707109200,2,mod_book,Okuma,Değişkenler ve Veri Tipleri
+63,5,3,63,1,1707109200,3,mod_forum,Forum,Kontrol Akışı
+64,5,4,64,1,1707109200,4,mod_forum,Forum,Döngüler
+65,5,5,65,1,1707109200,5,mod_bigbluebuttonbn,İzleme,Fonksiyonlar
+66,5,6,66,1,1707109200,6,mod_bigbluebuttonbn,İzleme,Listeler ve Diziler
+67,5,7,67,1,1707109200,7,mod_assign,Ödev,Sözlükler ve Kümeler
+68,5,8,68,1,1707109200,8,mod_resource,Okuma,Nesne Yönelimli Programlama
+69,5,9,69,1,1707109200,9,mod_bigbluebuttonbn,İzleme,Hata Yönetimi
+70,5,10,70,1,1707109200,10,mod_url,İzleme,Dosya İşlemleri
+71,5,11,71,1,1707109200,11,mod_page,Okuma,Modüller ve Paketler
+72,5,12,72,1,1707109200,12,mod_page,Okuma,Veritabanı Erişimi
+73,5,13,73,1,1707109200,13,mod_folder,Okuma,Web API Kullanımı
+74,5,14,74,1,1707109200,14,mod_bigbluebuttonbn,İzleme,Test ve Debugging
+75,5,15,75,1,1707109200,15,mod_assign,Ödev,Proje Uygulaması
+76,6,1,76,1,1707109200,1,mod_assign,Ödev,Temel Kavramlar
+77,6,2,77,1,1707109200,2,mod_book,Okuma,Değişkenler ve Veri Tipleri
+78,6,3,78,1,1707109200,3,mod_lesson,İzleme,Kontrol Akışı
+79,6,4,79,1,1707109200,4,mod_book,Okuma,Döngüler
+80,6,5,80,1,1707109200,5,mod_assign,Ödev,Fonksiyonlar
+81,6,6,81,1,1707109200,6,mod_page,Okuma,Listeler ve Diziler
+82,6,7,82,1,1707109200,7,mod_bigbluebuttonbn,İzleme,Sözlükler ve Kümeler
+83,6,8,83,1,1707109200,8,mod_book,Okuma,Nesne Yönelimli Programlama
+84,6,9,84,1,1707109200,9,mod_resource,Okuma,Hata Yönetimi
+85,6,10,85,1,1707109200,10,mod_page,Okuma,Dosya İşlemleri
+86,6,11,86,1,1707109200,11,mod_resource,Okuma,Modüller ve Paketler
+87,6,12,87,1,1707109200,12,mod_resource,Okuma,Veritabanı Erişimi
+88,6,13,88,1,1707109200,13,mod_assign,Ödev,Web API Kullanımı
+89,6,14,89,1,1707109200,14,mod_book,Okuma,Test ve Debugging
+90,6,15,90,1,1707109200,15,mod_book,Okuma,Proje Uygulaması
+91,7,1,91,1,1707109200,1,mod_assign,Ödev,Temel Kavramlar
+92,7,2,92,1,1707109200,2,mod_resource,Okuma,Değişkenler ve Veri Tipleri
+93,7,3,93,1,1707109200,3,mod_lesson,İzleme,Kontrol Akışı
+94,7,4,94,1,1707109200,4,mod_workshop,Ödev,Döngüler
+95,7,5,95,1,1707109200,5,mod_url,İzleme,Fonksiyonlar
+96,7,6,96,1,1707109200,6,mod_folder,Okuma,Listeler ve Diziler
+97,7,7,97,1,1707109200,7,mod_bigbluebuttonbn,İzleme,Sözlükler ve Kümeler
+98,7,8,98,1,1707109200,8,mod_bigbluebuttonbn,İzleme,Nesne Yönelimli Programlama
+99,7,9,99,1,1707109200,9,mod_url,İzleme,Hata Yönetimi
+100,7,10,100,1,1707109200,10,mod_workshop,Ödev,Dosya İşlemleri
+101,7,11,101,1,1707109200,11,mod_page,Okuma,Modüller ve Paketler
+102,7,12,102,1,1707109200,12,mod_resource,Okuma,Veritabanı Erişimi
+103,7,13,103,1,1707109200,13,mod_quiz,Ödev,Web API Kullanımı
+104,7,14,104,1,1707109200,14,mod_url,İzleme,Test ve Debugging
+105,7,15,105,1,1707109200,15,mod_folder,Okuma,Proje Uygulaması
+106,8,1,106,1,1707109200,1,mod_book,Okuma,Temel Kavramlar
+107,8,2,107,1,1707109200,2,mod_folder,Okuma,Değişkenler ve Veri Tipleri
+108,8,3,108,1,1707109200,3,mod_lesson,İzleme,Kontrol Akışı
+109,8,4,109,1,1707109200,4,mod_forum,Forum,Döngüler
+110,8,5,110,1,1707109200,5,mod_bigbluebuttonbn,İzleme,Fonksiyonlar
+111,8,6,111,1,1707109200,6,mod_assign,Ödev,Listeler ve Diziler
+112,8,7,112,1,1707109200,7,mod_quiz,Ödev,Sözlükler ve Kümeler
+113,8,8,113,1,1707109200,8,mod_resource,Okuma,Nesne Yönelimli Programlama
+114,8,9,114,1,1707109200,9,mod_lesson,İzleme,Hata Yönetimi
+115,8,10,115,1,1707109200,10,mod_resource,Okuma,Dosya İşlemleri
+116,8,11,116,1,1707109200,11,mod_quiz,Ödev,Modüller ve Paketler
+117,8,12,117,1,1707109200,12,mod_workshop,Ödev,Veritabanı Erişimi
+118,8,13,118,1,1707109200,13,mod_forum,Forum,Web API Kullanımı
+119,8,14,119,1,1707109200,14,mod_bigbluebuttonbn,İzleme,Test ve Debugging
+120,8,15,120,1,1707109200,15,mod_folder,Okuma,Proje Uygulaması
+121,9,1,121,1,1707109200,1,mod_lesson,İzleme,Temel Kavramlar
+122,9,2,122,1,1707109200,2,mod_assign,Ödev,Değişkenler ve Veri Tipleri
+123,9,3,123,1,1707109200,3,mod_page,Okuma,Kontrol Akışı
+124,9,4,124,1,1707109200,4,mod_assign,Ödev,Döngüler
+125,9,5,125,1,1707109200,5,mod_assign,Ödev,Fonksiyonlar
+126,9,6,126,1,1707109200,6,mod_forum,Forum,Listeler ve Diziler
+127,9,7,127,1,1707109200,7,mod_book,Okuma,Sözlükler ve Kümeler
+128,9,8,128,1,1707109200,8,mod_resource,Okuma,Nesne Yönelimli Programlama
+129,9,9,129,1,1707109200,9,mod_book,Okuma,Hata Yönetimi
+130,9,10,130,1,1707109200,10,mod_lesson,İzleme,Dosya İşlemleri
+131,9,11,131,1,1707109200,11,mod_lesson,İzleme,Modüller ve Paketler
+132,9,12,132,1,1707109200,12,mod_book,Okuma,Veritabanı Erişimi
+133,9,13,133,1,1707109200,13,mod_workshop,Ödev,Web API Kullanımı
+134,9,14,134,1,1707109200,14,mod_book,Okuma,Test ve Debugging
+135,9,15,135,1,1707109200,15,mod_quiz,Ödev,Proje Uygulaması
+136,10,1,136,1,1707109200,1,mod_lesson,İzleme,Temel Kavramlar
+137,10,2,137,1,1707109200,2,mod_page,Okuma,Değişkenler ve Veri Tipleri
+138,10,3,138,1,1707109200,3,mod_folder,Okuma,Kontrol Akışı
+139,10,4,139,1,1707109200,4,mod_resource,Okuma,Döngüler
+140,10,5,140,1,1707109200,5,mod_url,İzleme,Fonksiyonlar
+141,10,6,141,1,1707109200,6,mod_url,İzleme,Listeler ve Diziler
+142,10,7,142,1,1707109200,7,mod_forum,Forum,Sözlükler ve Kümeler
+143,10,8,143,1,1707109200,8,mod_folder,Okuma,Nesne Yönelimli Programlama
+144,10,9,144,1,1707109200,9,mod_bigbluebuttonbn,İzleme,Hata Yönetimi
+145,10,10,145,1,1707109200,10,mod_bigbluebuttonbn,İzleme,Dosya İşlemleri
+146,10,11,146,1,1707109200,11,mod_url,İzleme,Modüller ve Paketler
+147,10,12,147,1,1707109200,12,mod_forum,Forum,Veritabanı Erişimi
+148,10,13,148,1,1707109200,13,mod_lesson,İzleme,Web API Kullanımı
+149,10,14,149,1,1707109200,14,mod_quiz,Ödev,Test ve Debugging
+150,10,15,150,1,1707109200,15,mod_bigbluebuttonbn,İzleme,Proje Uygulaması
+151,11,1,151,1,1707109200,1,mod_resource,Okuma,Temel Kavramlar
+152,11,2,152,1,1707109200,2,mod_resource,Okuma,Değişkenler ve Veri Tipleri
+153,11,3,153,1,1707109200,3,mod_workshop,Ödev,Kontrol Akışı
+154,11,4,154,1,1707109200,4,mod_url,İzleme,Döngüler
+155,11,5,155,1,1707109200,5,mod_resource,Okuma,Fonksiyonlar
+156,11,6,156,1,1707109200,6,mod_resource,Okuma,Listeler ve Diziler
+157,11,7,157,1,1707109200,7,mod_resource,Okuma,Sözlükler ve Kümeler
+158,11,8,158,1,1707109200,8,mod_bigbluebuttonbn,İzleme,Nesne Yönelimli Programlama
+159,11,9,159,1,1707109200,9,mod_forum,Forum,Hata Yönetimi
+160,11,10,160,1,1707109200,10,mod_page,Okuma,Dosya İşlemleri
+161,11,11,161,1,1707109200,11,mod_page,Okuma,Modüller ve Paketler
+162,11,12,162,1,1707109200,12,mod_page,Okuma,Veritabanı Erişimi
+163,11,13,163,1,1707109200,13,mod_forum,Forum,Web API Kullanımı
+164,11,14,164,1,1707109200,14,mod_resource,Okuma,Test ve Debugging
+165,11,15,165,1,1707109200,15,mod_resource,Okuma,Proje Uygulaması
+166,12,1,166,1,1707109200,1,mod_resource,Okuma,Temel Kavramlar
+167,12,2,167,1,1707109200,2,mod_resource,Okuma,Değişkenler ve Veri Tipleri
+168,12,3,168,1,1707109200,3,mod_url,İzleme,Kontrol Akışı
+169,12,4,169,1,1707109200,4,mod_folder,Okuma,Döngüler
+170,12,5,170,1,1707109200,5,mod_url,İzleme,Fonksiyonlar
+171,12,6,171,1,1707109200,6,mod_bigbluebuttonbn,İzleme,Listeler ve Diziler
+172,12,7,172,1,1707109200,7,mod_bigbluebuttonbn,İzleme,Sözlükler ve Kümeler
+173,12,8,173,1,1707109200,8,mod_resource,Okuma,Nesne Yönelimli Programlama
+174,12,9,174,1,1707109200,9,mod_quiz,Ödev,Hata Yönetimi
+175,12,10,175,1,1707109200,10,mod_folder,Okuma,Dosya İşlemleri
+176,12,11,176,1,1707109200,11,mod_forum,Forum,Modüller ve Paketler
+177,12,12,177,1,1707109200,12,mod_resource,Okuma,Veritabanı Erişimi
+178,12,13,178,1,1707109200,13,mod_forum,Forum,Web API Kullanımı
+179,12,14,179,1,1707109200,14,mod_url,İzleme,Test ve Debugging
+180,12,15,180,1,1707109200,15,mod_book,Okuma,Proje Uygulaması
+181,13,1,181,1,1707109200,1,mod_quiz,Ödev,Temel Kavramlar
+182,13,2,182,1,1707109200,2,mod_book,Okuma,Değişkenler ve Veri Tipleri
+183,13,3,183,1,1707109200,3,mod_forum,Forum,Kontrol Akışı
+184,13,4,184,1,1707109200,4,mod_resource,Okuma,Döngüler
+185,13,5,185,1,1707109200,5,mod_url,İzleme,Fonksiyonlar
+186,13,6,186,1,1707109200,6,mod_quiz,Ödev,Listeler ve Diziler
+187,13,7,187,1,1707109200,7,mod_url,İzleme,Sözlükler ve Kümeler
+188,13,8,188,1,1707109200,8,mod_quiz,Ödev,Nesne Yönelimli Programlama
+189,13,9,189,1,1707109200,9,mod_quiz,Ödev,Hata Yönetimi
+190,13,10,190,1,1707109200,10,mod_workshop,Ödev,Dosya İşlemleri
+191,13,11,191,1,1707109200,11,mod_book,Okuma,Modüller ve Paketler
+192,13,12,192,1,1707109200,12,mod_workshop,Ödev,Veritabanı Erişimi
+193,13,13,193,1,1707109200,13,mod_lesson,İzleme,Web API Kullanımı
+194,13,14,194,1,1707109200,14,mod_page,Okuma,Test ve Debugging
+195,13,15,195,1,1707109200,15,mod_lesson,İzleme,Proje Uygulaması
+196,14,1,196,1,1707109200,1,mod_quiz,Ödev,Temel Kavramlar
+197,14,2,197,1,1707109200,2,mod_assign,Ödev,Değişkenler ve Veri Tipleri
+198,14,3,198,1,1707109200,3,mod_quiz,Ödev,Kontrol Akışı
+199,14,4,199,1,1707109200,4,mod_quiz,Ödev,Döngüler
+200,14,5,200,1,1707109200,5,mod_resource,Okuma,Fonksiyonlar
+201,14,6,201,1,1707109200,6,mod_url,İzleme,Listeler ve Diziler
+202,14,7,202,1,1707109200,7,mod_forum,Forum,Sözlükler ve Kümeler
+203,14,8,203,1,1707109200,8,mod_book,Okuma,Nesne Yönelimli Programlama
+204,14,9,204,1,1707109200,9,mod_lesson,İzleme,Hata Yönetimi
+205,14,10,205,1,1707109200,10,mod_forum,Forum,Dosya İşlemleri
+206,14,11,206,1,1707109200,11,mod_forum,Forum,Modüller ve Paketler
+207,14,12,207,1,1707109200,12,mod_page,Okuma,Veritabanı Erişimi
+208,14,13,208,1,1707109200,13,mod_quiz,Ödev,Web API Kullanımı
+209,14,14,209,1,1707109200,14,mod_url,İzleme,Test ve Debugging
+210,14,15,210,1,1707109200,15,mod_lesson,İzleme,Proje Uygulaması
+211,15,1,211,1,1707109200,1,mod_resource,Okuma,Temel Kavramlar
+212,15,2,212,1,1707109200,2,mod_assign,Ödev,Değişkenler ve Veri Tipleri
+213,15,3,213,1,1707109200,3,mod_lesson,İzleme,Kontrol Akışı
+214,15,4,214,1,1707109200,4,mod_url,İzleme,Döngüler
+215,15,5,215,1,1707109200,5,mod_assign,Ödev,Fonksiyonlar
+216,15,6,216,1,1707109200,6,mod_quiz,Ödev,Listeler ve Diziler
+217,15,7,217,1,1707109200,7,mod_quiz,Ödev,Sözlükler ve Kümeler
+218,15,8,218,1,1707109200,8,mod_quiz,Ödev,Nesne Yönelimli Programlama
+219,15,9,219,1,1707109200,9,mod_quiz,Ödev,Hata Yönetimi
+220,15,10,220,1,1707109200,10,mod_folder,Okuma,Dosya İşlemleri
+221,15,11,221,1,1707109200,11,mod_book,Okuma,Modüller ve Paketler
+222,15,12,222,1,1707109200,12,mod_workshop,Ödev,Veritabanı Erişimi
+223,15,13,223,1,1707109200,13,mod_resource,Okuma,Web API Kullanımı
+224,15,14,224,1,1707109200,14,mod_lesson,İzleme,Test ve Debugging
+225,15,15,225,1,1707109200,15,mod_quiz,Ödev,Proje Uygulaması

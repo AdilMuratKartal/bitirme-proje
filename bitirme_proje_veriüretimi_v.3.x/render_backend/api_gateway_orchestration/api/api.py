@@ -2,7 +2,7 @@
 render_backend/api/api.py — FastAPI Uygulaması
 
 Web Service entrypoint. Sıfır iş mantığı, sıfır SQL, sıfır doğrudan model çağrısı.
-Tüm iş mantığı Orchestration katmanına delege edilir.
+Tüm iş mantığı Orchestration ve ServiceLayer katmanlarına delege edilir.
 
 Render startCommand:
     gunicorn api_gateway_orchestration.api.api:app \
@@ -19,6 +19,7 @@ from typing import Annotated
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.responses import JSONResponse
+from sqlalchemy import text
 
 # render_backend/ kökünü sys.path'e ekle
 _HERE = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,16 @@ from api_gateway_orchestration.api.gateway import verify_firebase_token
 from api_gateway_orchestration.api.middleware import register_middleware
 from api_gateway_orchestration.orchestration.model_registry import ModelRegistry
 from api_gateway_orchestration.orchestration.orchestration import BatchOrchestrator
+from schemas import (
+    CompetenciesResponse,
+    EventsResponse,
+    GradesPageResponse,
+    LearningPathResponse,
+)
+from ServiceLayer.grades_service import get_grades_page
+from ServiceLayer.learning_path_service import get_learning_path
+from ServiceLayer.competencies_service import get_competencies
+from ServiceLayer.events_service import get_events
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -45,7 +56,7 @@ async def lifespan(app: FastAPI):
     global _models, _orchestrator
     logger.info("startup: modeller yükleniyor")
     _models = ModelRegistry.load_all()
-    _orchestrator = BatchOrchestrator(dao=None, models=_models)  # dao inject point
+    _orchestrator = BatchOrchestrator(dao=None, models=_models)
     logger.info("startup: hazır")
     yield
     logger.info("shutdown: bağlantılar kapatılıyor")
@@ -72,8 +83,13 @@ def _get_orchestrator(dao: MoodleDAO) -> BatchOrchestrator:
 # ── Endpoints ────────────────────────────────────────────────────
 
 @app.get("/health")
-async def health():
-    """Render health check. Model yüklü ise ok."""
+async def health(dao: Annotated[MoodleDAO, Depends(get_dao)]):
+    """Render health check. DB ping + model yüklü kontrolü."""
+    session = dao._session()
+    try:
+        session.execute(text("SELECT 1"))
+    finally:
+        session.close()
     return {"status": "ok", "models_loaded": _models is not None and _models.loaded}
 
 
@@ -88,41 +104,48 @@ async def get_dashboard(
     FRESH → cache'den (~50ms). STALE/PENDING → on-demand predict (~2-4s).
     """
     orch = _get_orchestrator(dao)
-    result = orch.get_student_analysis(uid, dao)
-    return result
+    return orch.get_student_analysis(uid, dao)
 
 
-@app.get("/api/student/{uid}/grades")
-async def get_grades(
+@app.get("/api/student/{uid}/grades", response_model=GradesPageResponse)
+async def grades(
     uid: int,
     dao: Annotated[MoodleDAO, Depends(get_dao)],
     token: Annotated[dict, Depends(verify_firebase_token)],
 ):
-    """MIMO analiz sonuçları (risk skoru, tahmini not)."""
+    """Notlar sayfası: devam eden kurslar (MIMO + freshness) + biten kurslar (arşiv)."""
     orch = _get_orchestrator(dao)
-    cached = dao.get_mimo_analysis(uid)
-    if cached is None:
-        return JSONResponse(
-            {"status": "pending", "message": "Analiz henüz hazır değil"},
-            status_code=202
-        )
-    return cached
+    return get_grades_page(uid, dao, orch)
 
 
-@app.get("/api/student/{uid}/competencies")
-async def get_competencies(
+@app.get("/api/student/{uid}/learning-path", response_model=LearningPathResponse)
+async def learning_path(
     uid: int,
     dao: Annotated[MoodleDAO, Depends(get_dao)],
     token: Annotated[dict, Depends(verify_firebase_token)],
 ):
-    """HKAR konu önerileri."""
-    recs = dao.get_hkrt_analysis(uid)
-    if not recs:
-        return JSONResponse(
-            {"status": "pending", "message": "Öneri analizi henüz hazır değil"},
-            status_code=202
-        )
-    return {"recommendations": recs}
+    """Öğrenme yolu sayfası: son 30 günün aktivite timeline'ı + Chart.js veri seti."""
+    return get_learning_path(uid, dao)
+
+
+@app.get("/api/student/{uid}/competencies", response_model=CompetenciesResponse)
+async def competencies(
+    uid: int,
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+    token: Annotated[dict, Depends(verify_firebase_token)],
+):
+    """Yetkinlikler sayfası: 4 tür (OKUMA/FORUM/İZLEME/ÖDEV) log-tabanlı tamamlama oranları."""
+    return get_competencies(uid, dao)
+
+
+@app.get("/api/student/{uid}/events", response_model=EventsResponse)
+async def events(
+    uid: int,
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+    token: Annotated[dict, Depends(verify_firebase_token)],
+):
+    """Etkinlikler sayfası: quiz + ödev deadline'ları (geçmiş/yaklaşan/gelecek)."""
+    return get_events(uid, dao)
 
 
 @app.get("/api/student/{uid}/basic")
@@ -136,7 +159,7 @@ async def get_basic_values(
     if values is None:
         return JSONResponse(
             {"status": "pending", "message": "Temel değerler henüz hazır değil"},
-            status_code=202
+            status_code=202,
         )
     return values
 
@@ -151,12 +174,10 @@ async def trigger_weekly_batch(
     Production'da bu endpoint yerine Cron Job kullanılır.
     """
     import asyncio
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     orch = _get_orchestrator(dao)
-    week = datetime.utcnow().isocalendar()[1]
-
-    # Background task olarak başlat — uzun süren işlemi bloklamaz
+    week = datetime.now(timezone.utc).isocalendar()[1]
     asyncio.create_task(asyncio.to_thread(orch.run_weekly_batch, week, dao))
     return {"status": "started", "week": week}
 
@@ -166,8 +187,7 @@ async def batch_status(
     dao: Annotated[MoodleDAO, Depends(get_dao)],
     token: Annotated[dict, Depends(verify_firebase_token)],
 ):
-    """Son batch durumu — şimdilik en son computed_at bazlı özet."""
-    from sqlalchemy import text
+    """Son batch durumu — en son computed_at bazlı özet."""
     session = dao._session()
     try:
         result = session.execute(
