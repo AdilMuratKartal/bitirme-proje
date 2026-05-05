@@ -37,7 +37,7 @@ services:
     rootDir: render_backend
     schedule: "0 2 * * 1"         # Her Pazartesi 02:00 UTC
     buildCommand: pip install -r requirements_cpu.txt
-    command: python -m api_gateway_orchestration.orchestration.weekly_batch
+    startCommand: python -m api_gateway_orchestration.orchestration.weekly_batch
     envVars:
       - key: DATABASE_URL
         sync: false
