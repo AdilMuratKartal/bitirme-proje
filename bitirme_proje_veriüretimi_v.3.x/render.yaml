@@ -9,7 +9,7 @@ services:
     name: learning-insight-api
     env: python
     plan: standard                 # 2 GB RAM, always-on, sabit aylik
-    rootDir: render_backend
+    rootDir: bitirme_proje_veriüretimi_v.3.x/render_backend
     buildCommand: pip install -r requirements_cpu.txt
     startCommand: "gunicorn api_gateway_orchestration.api.api:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --timeout 60 --bind 0.0.0.0:$PORT"
     envVars:
@@ -29,7 +29,7 @@ services:
     name: learning-insight-weekly-batch
     env: python
     plan: standard                 # per-minute billing: ~$0.56/ay (16 sa/ay)
-    rootDir: render_backend
+    rootDir: bitirme_proje_veriüretimi_v.3.x/render_backend
     schedule: "0 2 * * 1"         # Her Pazartesi 02:00 UTC
     buildCommand: pip install -r requirements_cpu.txt
     startCommand: python -m api_gateway_orchestration.orchestration.weekly_batch
