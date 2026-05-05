@@ -95,7 +95,7 @@ def _basic_from_mimo(result: Dict, tables: Dict) -> Dict:
     return {
         "user_id":           uid,
         "gpa":               round(gpa, 2),
-        "total_courses":     3,  # config'den sabit — CFG.general.n_courses
+        "total_courses":     int(tables.get("mdl_grade_items", pd.DataFrame())["courseid"].nunique()) or 3,
         "completed_credits": completed,
         "login_streak":      streak,
     }

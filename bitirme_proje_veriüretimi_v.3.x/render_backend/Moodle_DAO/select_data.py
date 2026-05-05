@@ -18,15 +18,18 @@ class SelectMixin:
     def get_active_student_ids(self, week: int, limit: Optional[int] = None) -> List[int]:
         """
         student_registry tablosundan aktif öğrenci ID'lerini döner.
+        dropout_week IS NULL → hiç bırakmayan öğrenciler (S1)
+        dropout_week > week  → henüz bırakmamış öğrenciler
         Cron Job için: tüm aktif öğrenciler (limit=None).
         Test için: limit=N.
         """
         session = self._session()
         try:
-            q = "SELECT userid FROM student_registry WHERE is_active = true"
+            q = ("SELECT userid FROM student_registry "
+                 "WHERE dropout_week IS NULL OR dropout_week > :week")
             if limit:
                 q += f" LIMIT {limit}"
-            result = session.execute(text(q))
+            result = session.execute(text(q), {"week": week})
             return [row[0] for row in result.fetchall()]
         finally:
             session.close()

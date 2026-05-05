@@ -154,9 +154,8 @@ def _x_time_single(uid: int, tables: Dict[str, pd.DataFrame], n_lookback: int) -
     else:
         week_clicks = [0.0] * n_lookback
 
-    clicks_norm = [min(float(np.log1p(c)) / 5.0, 1.0) for c in week_clicks]
     return np.array(
-        [[c, avg_grade_norm] for c in clicks_norm],
+        [[float(c), avg_grade_norm] for c in week_clicks],
         dtype=np.float32,
     )  # (n_lookback, 2)
 
