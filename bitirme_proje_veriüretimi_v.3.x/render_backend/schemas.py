@@ -7,7 +7,7 @@ Bu modeller api.py response_model parametresinde kullanılır.
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Dict, List, Optional
 from pydantic import BaseModel
 
 
@@ -114,4 +114,36 @@ class EventsResponse(BaseModel):
     upcoming_events: List[EventItem]   # ref_date'e göre ≤7 gün içinde
     future_events: List[EventItem]     # >7 gün sonra
     reference_date_str: str
+    user_id: int
+
+
+# ─────────────────────────────────────────────────────────────────
+# HOMEPAGE (ana sayfa özet kartı)
+# ─────────────────────────────────────────────────────────────────
+
+class HomepageCourse(BaseModel):
+    course_id: int
+    course_name: str
+    current_grade: Optional[float] = None   # itemtype="course", None=henüz yok
+
+
+class HomepageGrade(BaseModel):
+    item_name: str     # quiz/ödev adı (mdl_grade_items.itemname)
+    grade: float
+    date_str: str      # "25 Nis 2026" Türkçe kısa format
+
+
+class HomepageEvent(BaseModel):
+    title: str
+    event_type: str    # "quiz" | "assignment"
+    due_date_str: str  # "25 Nisan 2026, Cumartesi"
+
+
+class HomepageResponse(BaseModel):
+    user_name: str
+    competency_pcts: Dict[str, float]     # {"OKUMA": 72.5, "FORUM": 45.0, ...}
+    active_courses: List[HomepageCourse]  # max 6
+    recent_grades: List[HomepageGrade]    # max 6, timemodified DESC
+    upcoming_events: List[HomepageEvent]  # yaklaşan quiz+ödev
+    recent_activities: List[str]          # son 30 günün benzersiz aktivite adları
     user_id: int

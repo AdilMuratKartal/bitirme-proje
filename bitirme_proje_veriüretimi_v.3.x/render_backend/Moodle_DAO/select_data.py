@@ -269,3 +269,16 @@ class SelectMixin:
             )
         finally:
             session.close()
+
+    def get_user(self, uid: int) -> Optional[Dict]:
+        """Öğrencinin adını ve e-posta bilgisini döner. Kayıt yoksa None."""
+        session = self._session()
+        try:
+            row = session.execute(
+                text("SELECT id, firstname, lastname, email "
+                     "FROM mdl_user WHERE id = :uid"),
+                {"uid": uid},
+            ).fetchone()
+            return dict(row._mapping) if row else None
+        finally:
+            session.close()

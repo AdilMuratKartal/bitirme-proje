@@ -36,9 +36,11 @@ from schemas import (
     CompetenciesResponse,
     EventsResponse,
     GradesPageResponse,
+    HomepageResponse,
     LearningPathResponse,
 )
 from ServiceLayer.grades_service import get_grades_page
+from ServiceLayer.homepage_service import get_homepage
 from ServiceLayer.learning_path_service import get_learning_path
 from ServiceLayer.competencies_service import get_competencies
 from ServiceLayer.events_service import get_events
@@ -91,6 +93,16 @@ async def health(dao: Annotated[MoodleDAO, Depends(get_dao)]):
     finally:
         session.close()
     return {"status": "ok", "models_loaded": _models is not None and _models.loaded}
+
+
+@app.get("/api/student/{uid}/home", response_model=HomepageResponse)
+async def home(
+    uid: int,
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+    token: Annotated[dict, Depends(verify_firebase_token)],
+):
+    """Ana sayfa özet kartı: kullanıcı adı, yetkinlik %, kurslar, notlar, etkinlikler."""
+    return get_homepage(uid, dao)
 
 
 @app.get("/api/student/{uid}/dashboard")
