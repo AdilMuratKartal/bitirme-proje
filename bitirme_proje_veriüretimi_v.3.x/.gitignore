@@ -3,6 +3,6 @@
 .venv_cpu/
 __pycache__/
 *.pyc
-saved_models/
+/saved_models/
 outputs/
 local/csv_exports/

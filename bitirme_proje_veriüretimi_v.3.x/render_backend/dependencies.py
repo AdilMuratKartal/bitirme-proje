@@ -20,8 +20,9 @@ _engine = create_engine(
     poolclass=QueuePool,
     pool_size=5,
     max_overflow=2,
-    pool_pre_ping=True,   # idle bağlantı koparsa otomatik yenile
-    pool_recycle=1800,    # 30 dk'dan eski bağlantıları yenile
+    pool_pre_ping=True,
+    pool_recycle=1800,
+    connect_args={"sslmode": "require"},
 )
 
 _SessionFactory = sessionmaker(bind=_engine, autocommit=False, autoflush=False)

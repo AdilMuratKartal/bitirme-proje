@@ -1,6 +1,6 @@
-# render.yaml — Tek Repo, İki Servis
-# Web Service (Hot Path) + Cron Job (Cold Path)
-# render_backend/ dizini her iki servis için rootDir'dir.
+# render.yaml — Tek Repo, Iki Servis, Standard Tier
+# rootDir: render_backend → Render sadece bu dizini build eder
+# PYTHONPATH: "." → render_backend/ kokunden tum importlar calisir
 
 services:
 
@@ -8,7 +8,7 @@ services:
   - type: web
     name: learning-insight-api
     env: python
-    plan: standard                  # $25/ay, 2GB RAM — TF + on-demand predict için
+    plan: standard                 # 2 GB RAM, always-on, sabit aylik
     rootDir: render_backend
     buildCommand: pip install -r requirements_cpu.txt
     startCommand: >
@@ -19,21 +19,23 @@ services:
       --bind 0.0.0.0:$PORT
     envVars:
       - key: DATABASE_URL
-        sync: false                 # Render dashboard'dan inject et
+        sync: false                # Dashboard'dan inject et (?sslmode=require ekli)
       - key: FIREBASE_PROJECT_ID
         sync: false
+      - key: FIREBASE_CONFIG_STR
+        sync: false                # Firebase service account JSON tek satir string
       - key: PYTHONPATH
         value: "."
       - key: PYTHON_VERSION
         value: "3.10.11"
 
-  # ── COLD PATH — Haftalık Batch Cron Job ─────────────────────────
+  # ── COLD PATH — Haftalik Batch Cron Job ─────────────────────────
   - type: cron
     name: learning-insight-weekly-batch
     env: python
-    plan: standard                  # 2GB RAM — TF + 10K öğrenci batch için
+    plan: standard                 # per-minute billing: ~$0.56/ay (16 sa/ay)
     rootDir: render_backend
-    schedule: "0 2 * * 1"          # Her Pazartesi 02:00 UTC
+    schedule: "0 2 * * 1"         # Her Pazartesi 02:00 UTC
     buildCommand: pip install -r requirements_cpu.txt
     command: python -m api_gateway_orchestration.orchestration.weekly_batch
     envVars:

@@ -18,10 +18,20 @@ try:
     import firebase_admin
     from firebase_admin import auth as fb_auth, credentials
 
-    _FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "")
+    _FIREBASE_PROJECT_ID  = os.environ.get("FIREBASE_PROJECT_ID", "")
+    _FIREBASE_CONFIG_STR  = os.environ.get("FIREBASE_CONFIG_STR", "")
 
     if _FIREBASE_PROJECT_ID and not firebase_admin._apps:
-        firebase_admin.initialize_app(credentials.ApplicationDefault())
+        if not _FIREBASE_CONFIG_STR:
+            # FIREBASE_CONFIG_STR eksikse Firebase baslatilmaz; korunan endpoint'ler 401 doner
+            import logging as _logging
+            _logging.getLogger(__name__).warning(
+                "FIREBASE_CONFIG_STR env var ayarlanmamis — Firebase baslatilmadi"
+            )
+        else:
+            import json as _json
+            _cred = credentials.Certificate(_json.loads(_FIREBASE_CONFIG_STR))
+            firebase_admin.initialize_app(_cred)
 
     _FIREBASE_AVAILABLE = True
 except ImportError:
