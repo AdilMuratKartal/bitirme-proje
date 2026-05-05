@@ -10,3 +10,4 @@ local/csv_exports/
 local/output/
 .claude/
 claude_state.json
+serviceAccountKey.json
