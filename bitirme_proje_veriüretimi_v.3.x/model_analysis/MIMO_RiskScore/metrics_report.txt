@@ -2,16 +2,16 @@
   MODEL ANALİZ RAPORU
   Model     : MIMO_RiskScore
   Görev     : REGRESSION
-  Örnekler  : 200
-  Tarih     : 2026-04-20 16:22:47
+  Örnekler  : 5000
+  Tarih     : 2026-05-05 11:56:22
 ============================================================
 
 ── Regresyon Metrikleri ────────────────────────
-  MSE            : 0.0050
-  RMSE           : 0.0706
-  MAE            : 0.0558
-  R²             : 0.9017
-  Hata Ortalaması: 0.0013
-  Hata Std       : 0.0706
+  MSE            : 0.0082
+  RMSE           : 0.0907
+  MAE            : 0.0688
+  R²             : 0.8977
+  Hata Ortalaması: -0.0059
+  Hata Std       : 0.0905
 
 ============================================================

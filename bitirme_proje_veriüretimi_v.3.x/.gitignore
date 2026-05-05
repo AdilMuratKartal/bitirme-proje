@@ -5,4 +5,8 @@ __pycache__/
 *.pyc
 /saved_models/
 outputs/
+output/
 local/csv_exports/
+local/output/
+.claude/
+claude_state.json

@@ -17,7 +17,12 @@ import numpy as np
 import pandas as pd
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(PROJECT_ROOT)
+LOCAL = PROJECT_ROOT + "/local"
+print(LOCAL)
 sys.path.insert(0, PROJECT_ROOT)
+sys.path.insert(0, LOCAL)  # config, engine, feature_mimo vb. düz import için
+
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -145,10 +150,10 @@ class TestDataLeakage:
 
     def test_x_time_grade_not_identical_to_target_grade(self, real_mimo_data):
         """
-        X_Time'ın son hafta notu (w_minus_1_grade) hedefe (y_grade) birebir eşit
-        olmamalı — bu tam eşitlik veri sızıntısını gösterir.
+        X_Time son hafta notu hedefe birebir eşit olmamalı.
+        y_grade artık segment bazlı bağımsız dağılımdan üretildiğinden
+        X_Time'daki gözlem dönemi notlarıyla özdeş olamaz.
         """
-        from config import CFG
         x_time_df = real_mimo_data["x_time_df"]
         y_grade   = real_mimo_data["y_grade"]
 
@@ -158,10 +163,54 @@ class TestDataLeakage:
         last_week_grade = x_time_df[last_col].values.astype(np.float64)
         target_grade    = y_grade.astype(np.float64)
 
-        # MIMO hedefi composite (0.5*grade + 0.3*quiz + 0.2*comp) olduğundan
-        # haftalık son nota birebir eşit olmamalı
         assert not np.allclose(last_week_grade, target_grade, atol=1e-3), \
             "X_Time son hafta notu hedefe birebir eşit — veri sızıntısı şüphesi!"
+
+    def test_target_not_linearly_derivable_from_x_static(self, real_mimo_data):
+        """
+        y_grade, X_Static'in lineer kombinasyonu olmamalı (R² < 0.95).
+        Eski leakage durumunda R² ~1.0 idi (y=0.5*grade+0.3*quiz+0.2*comp).
+        Segment bazlı hedefe geçişten sonra R² < 0.95 olmalıdır.
+        """
+        X = real_mimo_data["x_static_df"].drop(columns="userid").values.astype(np.float64)
+        y = real_mimo_data["y_grade"].astype(np.float64)
+
+        if len(y) < 10:
+            pytest.skip("Örnek sayısı R² hesabı için yetersiz")
+
+        X_b   = np.column_stack([X, np.ones(len(X))])
+        w, *_ = np.linalg.lstsq(X_b, y, rcond=None)
+        y_hat = X_b @ w
+        ss_res = np.sum((y - y_hat) ** 2)
+        ss_tot = np.sum((y - y.mean()) ** 2)
+        r2 = 1.0 - ss_res / (ss_tot + 1e-10)
+
+        assert r2 < 0.95, (
+            f"X_Static y_grade'i lineer olarak türetiyor (R²={r2:.3f} ≥ 0.95) "
+            f"— veri sızıntısı var!"
+        )
+
+    def test_y_risk_not_derivable_from_x_static(self, real_mimo_data):
+        """
+        y_risk, X_Static'in lineer kombinasyonu olmamalı (R² < 0.95).
+        """
+        X = real_mimo_data["x_static_df"].drop(columns="userid").values.astype(np.float64)
+        y = real_mimo_data["y_risk"].astype(np.float64)
+
+        if len(y) < 10:
+            pytest.skip("Örnek sayısı R² hesabı için yetersiz")
+
+        X_b   = np.column_stack([X, np.ones(len(X))])
+        w, *_ = np.linalg.lstsq(X_b, y, rcond=None)
+        y_hat = X_b @ w
+        ss_res = np.sum((y - y_hat) ** 2)
+        ss_tot = np.sum((y - y.mean()) ** 2)
+        r2 = 1.0 - ss_res / (ss_tot + 1e-10)
+
+        assert r2 < 0.95, (
+            f"X_Static y_risk'i lineer olarak türetiyor (R²={r2:.3f} ≥ 0.95) "
+            f"— veri sızıntısı var!"
+        )
 
 
 # ─────────────────────────────────────────────────────────────────

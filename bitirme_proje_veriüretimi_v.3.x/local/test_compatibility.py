@@ -159,7 +159,7 @@ def run_infer() -> None:
     import joblib
 
     # ── Dosya varlık kontrolü ─────────────────────────────────────
-    print("\n  [1/5] Artefakt dosyaları kontrol ediliyor...")
+    print("\n  [1/5] Artifacat dosyaları kontrol ediliyor...")
     missing = []
     for path, name in [(MODEL_PATH, "dummy_model.keras"), (SCALER_PATH, "dummy_scaler.pkl")]:
         if os.path.exists(path):

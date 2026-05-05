@@ -112,28 +112,30 @@ def plot_learning_curves(
     ax.plot(epochs, history["loss"], label="Train Loss", linewidth=2)
     if has_val:
         ax.plot(epochs, history["val_loss"], label="Val Loss", linewidth=2, linestyle="--")
-    ax.set_title(f"{model_name} — Loss Eğrisi")
+    ax.set_title(f"{model_name} - Loss Curve")
     ax.set_xlabel("Epoch")
     ax.set_ylabel("Loss")
     ax.legend()
 
-    # ── İkincil metrik grafiği ────────────────────────────────────
+    # Secondary metric
     if secondary_key:
         ax2 = axes[1]
         ax2.plot(epochs, history[secondary_key], label=f"Train {secondary_key.upper()}", linewidth=2)
         if secondary_val_key:
             ax2.plot(epochs, history[secondary_val_key],
                      label=f"Val {secondary_key.upper()}", linewidth=2, linestyle="--")
-        ax2.set_title(f"{model_name} — {secondary_key.upper()} Eğrisi")
+        ax2.set_title(f"{model_name} - {secondary_key.upper()} Curve")
         ax2.set_xlabel("Epoch")
         ax2.set_ylabel(secondary_key.upper())
         ax2.legend()
 
-    fig.suptitle(f"Öğrenme Eğrileri — {model_name}", fontsize=13, fontweight="bold")
+    fig.suptitle(f"Ogrenme Egrileri - {model_name}", fontsize=13, fontweight="bold")
     plt.tight_layout()
     path = os.path.join(output_dir, "loss_curve.png")
     fig.savefig(path, dpi=DPI, bbox_inches="tight")
     plt.close(fig)
+    if not os.path.isfile(path):
+        raise RuntimeError(f"savefig sessiz basarisiz: dosya olusturulamadi -> {path}")
     print(f"  [OK] loss_curve.png  -> {path}")
 
 
@@ -166,32 +168,34 @@ def _plot_regression(
     ax1.scatter(y_true, y_pred, alpha=0.45, edgecolors="none", s=30)
     lims = [min(y_true.min(), y_pred.min()) - 2,
             max(y_true.max(), y_pred.max()) + 2]
-    ax1.plot(lims, lims, "r--", linewidth=1.5, label="Mükemmel Tahmin")
+    ax1.plot(lims, lims, "r--", linewidth=1.5, label="Perfect Prediction")
     ax1.set_xlim(lims); ax1.set_ylim(lims)
-    ax1.set_xlabel("Gerçek Değer"); ax1.set_ylabel("Tahmin Edilen")
+    ax1.set_xlabel("True Value"); ax1.set_ylabel("Predicted")
     ax1.set_title("Actual vs Predicted")
     ax1.legend(fontsize=8)
 
-    # Hata histogram
+    # Error histogram
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.hist(errors, bins=30, edgecolor="white", color="steelblue", alpha=0.8)
     ax2.axvline(0, color="red", linestyle="--", linewidth=1.5)
-    ax2.set_xlabel("Hata (Pred − True)"); ax2.set_ylabel("Frekans")
-    ax2.set_title("Hata Dağılımı")
+    ax2.set_xlabel("Error (Pred - True)"); ax2.set_ylabel("Frequency")
+    ax2.set_title("Error Distribution")
 
     # Residuals vs Predicted
     ax3 = fig.add_subplot(gs[0, 2])
     ax3.scatter(y_pred, errors, alpha=0.4, edgecolors="none", s=25)
     ax3.axhline(0, color="red", linestyle="--", linewidth=1.5)
-    ax3.set_xlabel("Tahmin Edilen"); ax3.set_ylabel("Rezidüel")
-    ax3.set_title("Rezidüel Grafiği")
+    ax3.set_xlabel("Predicted"); ax3.set_ylabel("Residual")
+    ax3.set_title("Residual Plot")
 
-    fig.suptitle(f"Tahmin Analizi — {model_name}", fontsize=13, fontweight="bold")
+    fig.suptitle(f"Tahmin Analizi - {model_name}", fontsize=13, fontweight="bold")
     plt.tight_layout()
     path = os.path.join(output_dir, "prediction_analysis.png")
     fig.savefig(path, dpi=DPI, bbox_inches="tight")
     plt.close(fig)
-    print(f"  [OK] prediction_analysis.png ->{path}")
+    if not os.path.isfile(path):
+        raise RuntimeError(f"savefig sessiz basarisiz: dosya olusturulamadi -> {path}")
+    print(f"  [OK] prediction_analysis.png -> {path}")
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -234,15 +238,17 @@ def _plot_confusion_matrix(
                     yticklabels=class_labels or "auto",
                     linewidths=0.5, ax=ax)
         ax.set_title(title)
-        ax.set_xlabel("Tahmin Edilen Sınıf")
-        ax.set_ylabel("Gerçek Sınıf")
+        ax.set_xlabel("Predicted Class")
+        ax.set_ylabel("True Class")
 
-    fig.suptitle(f"Sınıflandırma Analizi — {model_name}", fontsize=13, fontweight="bold")
+    fig.suptitle(f"Siniflandirma Analizi - {model_name}", fontsize=13, fontweight="bold")
     plt.tight_layout()
     path = os.path.join(output_dir, "prediction_analysis.png")
     fig.savefig(path, dpi=DPI, bbox_inches="tight")
     plt.close(fig)
-    print(f"  [OK] prediction_analysis.png ->{path}")
+    if not os.path.isfile(path):
+        raise RuntimeError(f"savefig sessiz basarisiz: dosya olusturulamadi -> {path}")
+    print(f"  [OK] prediction_analysis.png -> {path}")
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -341,71 +347,121 @@ def run_analysis(
     print(f"  Cikti klasoru  : {out}")
     print(f"{'='*55}")
 
+    import traceback as _tb
+
     # 1. Öğrenme eğrileri
     if history:
-        plot_learning_curves(history, out, model_name)
+        try:
+            plot_learning_curves(history, out, model_name)
+        except Exception:
+            print("  [HATA] loss_curve.png kaydedilemedi:")
+            _tb.print_exc()
     else:
         print("  [INFO] history=None -- loss_curve.png atlandi.")
 
-    # 2. Tahmin analizi + 3. Metrik raporu
-    if task == "regression":
-        metrics = _regression_metrics(y_true, y_pred)
-        _plot_regression(y_true, y_pred, out, model_name)
-    else:
-        metrics = _classification_metrics(y_true, y_pred, class_labels)
-        _plot_confusion_matrix(y_true, y_pred, out, model_name, class_labels)
+    # 2. Tahmin analizi
+    try:
+        if task == "regression":
+            metrics = _regression_metrics(y_true, y_pred)
+            _plot_regression(y_true, y_pred, out, model_name)
+        else:
+            metrics = _classification_metrics(y_true, y_pred, class_labels)
+            _plot_confusion_matrix(y_true, y_pred, out, model_name, class_labels)
+    except Exception:
+        print("  [HATA] prediction_analysis.png kaydedilemedi:")
+        _tb.print_exc()
+        metrics = {}
 
-    _write_metrics_report(metrics, out, model_name, task, len(y_true))
+    # 3. Metrik raporu — plot başarısız olsa da yazılır
+    if metrics:
+        _write_metrics_report(metrics, out, model_name, task, len(y_true))
 
     print(f"\n  Tum ciktilar kaydedildi -> {out}\n")
     return out
 
 
 # ═════════════════════════════════════════════════════════════════
-# Demo (python analyze_models.py ile doğrudan çalıştırma)
+# Doğrudan çalıştırma: outputs/train/ içindeki gerçek history'leri kullanır
 # ═════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
-    rng = np.random.default_rng(42)
-    N   = 200
+    import json
+    import sys
 
-    # ── Demo 1: MIMO Risk Skoru (Regresyon) ───────────────────────
-    y_true_reg  = rng.uniform(0.1, 0.9, N).astype(np.float32)
-    noise       = rng.normal(0, 0.07, N).astype(np.float32)
-    y_pred_reg  = np.clip(y_true_reg + noise, 0, 1)
+    _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+    _ROOT_DIR   = os.path.dirname(_SCRIPT_DIR)
+    _TRAIN_DIR  = os.path.join(_ROOT_DIR, "outputs", "train")
 
-    fake_history_reg = {
-        "loss":     list(np.exp(-np.linspace(0.5, 3.0, 50)) + rng.uniform(0, 0.02, 50)),
-        "val_loss": list(np.exp(-np.linspace(0.4, 2.5, 50)) + rng.uniform(0, 0.04, 50)),
-        "mae":      list(np.linspace(0.25, 0.04, 50) + rng.uniform(0, 0.01, 50)),
-        "val_mae":  list(np.linspace(0.28, 0.07, 50) + rng.uniform(0, 0.02, 50)),
+    _SEG_MAP    = {"S1": 0, "S2": 1, "S3": 2, "S4": 3}
+    _SEG_LABELS = ["S1_Başarılı", "S2_Orta", "S3_İstikrarsız", "S4_Terk"]
+
+    _CANDIDATES = {
+        "MIMO": {
+            "history":     os.path.join(_TRAIN_DIR, "mimo_history.json"),
+            "predictions": os.path.join(_TRAIN_DIR, "mimo_predictions.json"),
+        },
+        "HKAR": {
+            "history":     os.path.join(_TRAIN_DIR, "hkar_history.json"),
+            "predictions": os.path.join(_TRAIN_DIR, "hkar_predictions.json"),
+        },
     }
 
-    run_analysis(
-        model_name = "MIMO_RiskScore",
-        task       = "regression",
-        y_true     = y_true_reg,
-        y_pred     = y_pred_reg,
-        history    = fake_history_reg,
-    )
+    # ── History varlık kontrolü ───────────────────────────────────
+    found = {k: v for k, v in _CANDIDATES.items() if os.path.isfile(v["history"])}
 
-    # ── Demo 2: HKAR Konu Başarısı (Sınıflandırma) ───────────────
-    y_true_cls = rng.integers(0, 4, N)
-    probs      = rng.dirichlet([3, 2, 2, 1], N)
-    y_pred_cls = np.argmax(probs, axis=1)
-    y_pred_cls = np.where(rng.random(N) < 0.75, y_true_cls, y_pred_cls)
+    if not found:
+        print("[HATA] History bulunamadı.")
+        print(f"       Beklenen klasör : {_TRAIN_DIR}")
+        print("       Lütfen önce train_models.py çalıştırın.")
+        sys.exit(1)
 
-    fake_history_cls = {
-        "loss":         list(np.exp(-np.linspace(0.4, 2.8, 60)) + rng.uniform(0, 0.03, 60)),
-        "val_loss":     list(np.exp(-np.linspace(0.3, 2.2, 60)) + rng.uniform(0, 0.05, 60)),
-        "accuracy":     list(np.linspace(0.3, 0.88, 60) + rng.uniform(0, 0.02, 60)),
-        "val_accuracy": list(np.linspace(0.28, 0.82, 60) + rng.uniform(0, 0.03, 60)),
-    }
+    print(f"  Bulunan modeller: {list(found.keys())}")
 
-    run_analysis(
-        model_name   = "HKAR_TopicSuccess",
-        task         = "classification",
-        y_true       = y_true_cls,
-        y_pred       = y_pred_cls,
-        history      = fake_history_cls,
-        class_labels = ["S1_Başarılı", "S2_Orta", "S3_İstikrarsız", "S4_Terk"],
-    )
+    # ── MIMO: Risk Skoru Regresyonu ───────────────────────────────
+    if "MIMO" in found:
+        paths = found["MIMO"]
+        if not os.path.isfile(paths["predictions"]):
+            print("  [WARN] MIMO predictions dosyası yok — MIMO atlanıyor.")
+        else:
+            with open(paths["history"],     encoding="utf-8") as f:
+                mimo_hist = json.load(f)
+            with open(paths["predictions"], encoding="utf-8") as f:
+                mimo_preds = json.load(f)
+
+            # Keras multi-output key'lerini plot_learning_curves formatına normalize et
+            mimo_hist_plot = {
+                "loss":    mimo_hist["loss"],
+                "val_loss": mimo_hist["val_loss"],
+                "mae":     mimo_hist.get("y_risk_mae"),
+                "val_mae": mimo_hist.get("val_y_risk_mae"),
+            }
+            mimo_hist_plot = {k: v for k, v in mimo_hist_plot.items() if v is not None}
+
+            run_analysis(
+                model_name = "MIMO_RiskScore",
+                task       = "regression",
+                y_true     = np.array([p["true_risk"] for p in mimo_preds]),
+                y_pred     = np.array([p["pred_risk"]  for p in mimo_preds]),
+                history    = mimo_hist_plot,
+                output_dir = os.path.join(_ROOT_DIR, "model_analysis"),
+            )
+
+    # ── HKAR: Segment Sınıflandırması ────────────────────────────
+    if "HKAR" in found:
+        paths = found["HKAR"]
+        if not os.path.isfile(paths["predictions"]):
+            print("  [WARN] HKAR predictions dosyası yok — HKAR atlanıyor.")
+        else:
+            with open(paths["history"],     encoding="utf-8") as f:
+                hkar_hist = json.load(f)
+            with open(paths["predictions"], encoding="utf-8") as f:
+                hkar_preds = json.load(f)
+
+            run_analysis(
+                model_name   = "HKAR_SegmentClassification",
+                task         = "classification",
+                y_true       = np.array([_SEG_MAP[p["true_segment"]] for p in hkar_preds]),
+                y_pred       = np.array([_SEG_MAP[p["pred_segment"]] for p in hkar_preds]),
+                history      = hkar_hist,
+                class_labels = _SEG_LABELS,
+                output_dir   = os.path.join(_ROOT_DIR, "model_analysis"),
+            )

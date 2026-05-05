@@ -1,16 +1,17 @@
 """
-feature_hkar.py — HKAR Model (3 & 4) Özellik Mühendisliği
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ERD referansları (HKRT-MODEL-ERD):
+feature_hkar.py — HKAR Model (3 & 4) Özellik Mühendisliği  v2.0
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Temporal ayrım:
+  X_Sequence / X_UserHabit → H1–H{FUTURE_CUTOFF_WEEK} (gözlem)
+  y_segment                → STUDENT_REGISTRY.segment (sızıntısız)
 
+ERD referansları (HKRT-MODEL-ERD):
   X_Sequence (LSTM — DKT Girdisi):
-    Zincir:
-      mdl_quiz_attempts.uniqueid
-        → mdl_question_attempts.questionusageid
-        → mdl_question_attempts.questionid → mdl_question.id
-        → mdl_question.category → mdl_question_categories.id → .name  (sent name)
-      mdl_question_attempt_steps.questionattemptid
-        → mdl_question_attempts.id → .state                           (sent state)
+    mdl_quiz_attempts.uniqueid
+      → mdl_question_attempts.questionusageid
+      → mdl_question_attempts.questionid → mdl_question.id
+      → mdl_question.category → mdl_question_categories.id → .name
+    mdl_question_attempt_steps.questionattemptid → mdl_question_attempts.id
 
   X_UserHabit (Dense):
     mdl_logstore_standard_log → component → içerik tipi dağılımı
@@ -20,26 +21,40 @@ ERD referansları (HKRT-MODEL-ERD):
   recommended_content list   [{topic, content_type, module_ids, success_rate}]
 """
 
+import datetime
 import numpy as np
 import pandas as pd
 from typing import Dict, List, Any
-from config import CFG, COMPONENT_TYPE_MAP
+
+from config import CFG, COMPONENT_TYPE_MAP, FUTURE_CUTOFF_WEEK
 from student_registry import STUDENT_REGISTRY
 
 
-TOP_K_WRONG      = 10
-N_SEQ_FEATURES   = 3   # (konu_idx_norm, başarı_oranı, son_adım_state_idx_norm)
+TOP_K_WRONG    = 10
+N_SEQ_FEATURES = 3   # (konu_idx_norm, başarı_oranı, son_adım_state_idx_norm)
+
+
+def _effective_cutoff_week() -> int:
+    return min(CFG.general.n_weeks, FUTURE_CUTOFF_WEEK)
+
+
+def _cutoff_ts() -> int:
+    """H{effective_cutoff} bitişi Unix timestamp."""
+    return int(
+        (CFG.general.semester_start
+         + datetime.timedelta(weeks=_effective_cutoff_week())).timestamp()
+    )
 
 
 # ─────────────────────────────────────────────────────────────────
 # YARDIMCI: Tam zincir birleştirmesi
 # ─────────────────────────────────────────────────────────────────
 def _build_enriched_attempts(
-    quiz_att_df:  pd.DataFrame,   # mdl_quiz_attempts         (uniqueid)
-    qa_df:        pd.DataFrame,   # mdl_question_attempts     (questionusageid, questionid)
-    q_df:         pd.DataFrame,   # mdl_question              (id, category)
-    qcat_df:      pd.DataFrame,   # mdl_question_categories   (id, name)
-    qsteps_df:    pd.DataFrame,   # mdl_question_attempt_steps (questionattemptid, state)
+    quiz_att_df:  pd.DataFrame,
+    qa_df:        pd.DataFrame,
+    q_df:         pd.DataFrame,
+    qcat_df:      pd.DataFrame,
+    qsteps_df:    pd.DataFrame,
 ) -> pd.DataFrame:
     """
     HKRT ERD zinciri:
@@ -51,21 +66,18 @@ def _build_enriched_attempts(
       question_attempt_steps.questionattemptid
         → question_attempts.id               (adım ↔ deneme)
 
-    Ek sütunlar üretilir:
+    Ek sütunlar:
       topic_name   : konu adı
       is_correct   : fraction >= 1.0
       final_state  : o denemenin son adım state'i
     """
-    # 1) question_attempts ← quiz_attempts (userid'yi taşıyoruz)
     qa = qa_df.copy()
 
-    # 2) question ← question_attempts
     qa = qa.merge(
         q_df[["id", "category"]].rename(columns={"id": "q_pk", "category": "cat_id"}),
         left_on="questionid", right_on="q_pk", how="left"
     ).drop(columns="q_pk")
 
-    # 3) question_categories ← question
     qa = qa.merge(
         qcat_df[["id", "name"]].rename(columns={"id": "qcat_id", "name": "topic_name"}),
         left_on="cat_id", right_on="qcat_id", how="left"
@@ -73,7 +85,6 @@ def _build_enriched_attempts(
 
     qa["is_correct"] = (qa["fraction"] >= 1.0).astype(int)
 
-    # 4) Son adım state'i al: her question_attempt için son timecreated'daki state
     if not qsteps_df.empty:
         last_steps = (
             qsteps_df.sort_values("timecreated")
@@ -82,7 +93,9 @@ def _build_enriched_attempts(
                      .reset_index()
                      .rename(columns={"questionattemptid": "qa_id", "state": "final_state"})
         )
-        qa = qa.merge(last_steps, left_on="id", right_on="qa_id", how="left").drop(columns="qa_id")
+        qa = qa.merge(
+            last_steps, left_on="id", right_on="qa_id", how="left"
+        ).drop(columns="qa_id")
     else:
         qa["final_state"] = "gradedright"
 
@@ -107,9 +120,9 @@ def analyze_performance(enriched_df: pd.DataFrame) -> pd.DataFrame:
     )
     stats["success_rate"] = (stats["correct"] / stats["total"]).round(3)
 
-    uids       = STUDENT_REGISTRY["userid"].values
-    full_idx   = pd.MultiIndex.from_product([uids, CFG.topics], names=["userid", "topic"])
-    stats      = (
+    uids     = STUDENT_REGISTRY["userid"].values
+    full_idx = pd.MultiIndex.from_product([uids, CFG.topics], names=["userid", "topic"])
+    stats    = (
         stats.set_index(["userid", "topic"])
              .reindex(full_idx, fill_value=np.nan)
              .reset_index()
@@ -128,16 +141,11 @@ def build_x_sequence(
     topic_status_df: pd.DataFrame,
 ) -> np.ndarray:
     """
-    HKRT ERD: X_Sequence — DKT Girdisi
     Her öğrenci için en çok yanlış yapılan TOP_K_WRONG konu.
     Shape: (n_students, TOP_K_WRONG, 3)
       [0] konu indeksi (normalize 0–1)
       [1] o konudaki başarı oranı
       [2] son adım state indeksi (normalize 0–1)
-
-    STATE → indeks eşlemesi:
-      todo=0, invalid=1, complete=2, needsgrading=3,
-      gradedwrong=4, gradedright=5, gradedpartial=6
     """
     topic_to_idx = {t: i for i, t in enumerate(CFG.topics)}
     state_to_idx = {s: i for i, s in enumerate(CFG.step_states)}
@@ -151,8 +159,8 @@ def build_x_sequence(
              .size()
              .reset_index(name="wrong_count")
     )
-    topic_sr    = topic_status_df.set_index(["userid", "topic"])["success_rate"]
-    last_state  = enriched_df.groupby(["userid", "topic_name"])["final_state"].last()
+    topic_sr   = topic_status_df.set_index(["userid", "topic"])["success_rate"]
+    last_state = enriched_df.groupby(["userid", "topic_name"])["final_state"].last()
 
     for i, uid in enumerate(uids):
         user_wrong = (
@@ -161,16 +169,16 @@ def build_x_sequence(
             .head(TOP_K_WRONG)
         )
         for j, row in enumerate(user_wrong.itertuples()):
-            t_idx  = topic_to_idx.get(row.topic_name, 0)
-            sr     = float(topic_sr.get((uid, row.topic_name), 0.0))
-            state  = last_state.get((uid, row.topic_name), "gradedwrong")
-            s_idx  = state_to_idx.get(state, 4)
+            t_idx = topic_to_idx.get(row.topic_name, 0)
+            sr    = float(topic_sr.get((uid, row.topic_name), 0.0))
+            state = last_state.get((uid, row.topic_name), "gradedwrong")
+            s_idx = state_to_idx.get(state, 4)
 
-            tensor[i, j, 0] = t_idx  / max(len(CFG.topics) - 1, 1)
+            tensor[i, j, 0] = t_idx / max(len(CFG.topics) - 1, 1)
             tensor[i, j, 1] = sr
-            tensor[i, j, 2] = s_idx  / max(len(CFG.step_states) - 1, 1)
+            tensor[i, j, 2] = s_idx / max(len(CFG.step_states) - 1, 1)
 
-    return tensor   # (N, TOP_K_WRONG, 3)
+    return tensor
 
 
 # ─────────────────────────────────────────────────────────────────
@@ -184,9 +192,9 @@ def build_x_user_habit(log_df: pd.DataFrame) -> np.ndarray:
     content_types = ["İzleme", "Okuma", "Ödev", "Forum", "Diğer"]
     uids          = STUDENT_REGISTRY["userid"].values
 
-    log               = log_df.copy()
-    log["ctype"]      = log["component"].map(COMPONENT_TYPE_MAP).fillna("Diğer")
-    counts            = (
+    log          = log_df.copy()
+    log["ctype"] = log["component"].map(COMPONENT_TYPE_MAP).fillna("Diğer")
+    counts       = (
         log.groupby(["userid", "ctype"])
            .size()
            .unstack(fill_value=0)
@@ -256,24 +264,40 @@ def recommend_content(
 # ANA BORU HATTI
 # ─────────────────────────────────────────────────────────────────
 def build_hkar_dataset(tables: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
-    print("\n🔧 HKAR özellik mühendisliği başlıyor...")
+    print("\n[HKAR] Ozellik muhendisligi basliyor...")
+    cutoff = _cutoff_ts()
+    print(f"   Gözlem penceresi: H1–H{_effective_cutoff_week()} (cutoff_ts={cutoff})")
 
-    # Tam zincir birleştirmesi
+    # ── Gözlem penceresine kısıtla ────────────────────────────────
+    quiz_att_past   = tables["mdl_quiz_attempts"][
+        tables["mdl_quiz_attempts"]["timefinish"] < cutoff
+    ]
+    qsteps_past     = tables["mdl_question_attempt_steps"][
+        tables["mdl_question_attempt_steps"]["timecreated"] < cutoff
+    ]
+    qa_past         = tables["mdl_question_attempts"][
+        tables["mdl_question_attempts"]["timecreated"] < cutoff
+    ]
+    log_past        = tables["mdl_logstore_standard_log"][
+        tables["mdl_logstore_standard_log"]["timecreated"] < cutoff
+    ]
+
+    # Tam zincir birleştirmesi (sadece gözlem dönemi)
     enriched = _build_enriched_attempts(
-        tables["mdl_quiz_attempts"],
-        tables["mdl_question_attempts"],
+        quiz_att_past,
+        qa_past,
         tables["mdl_question"],
         tables["mdl_question_categories"],
-        tables["mdl_question_attempt_steps"],
+        qsteps_past,
     )
-    print(f"   ✅ Zincir join tamamlandı → {len(enriched)} satır")
+    print(f"   ✅ Zincir join tamamlandı → {len(enriched)} satır (H1-H{_effective_cutoff_week()})")
     print(f"      quiz_attempts → question_attempts → question → categories + steps")
 
     topic_status_df = analyze_performance(enriched)
     print(f"   ✅ analyze_performance → {len(topic_status_df)} satır")
 
-    x_seq     = build_x_sequence(enriched, topic_status_df)
-    user_habit = build_x_user_habit(tables["mdl_logstore_standard_log"])
+    x_seq      = build_x_sequence(enriched, topic_status_df)
+    user_habit = build_x_user_habit(log_past)
     recs_df    = recommend_content(topic_status_df, tables["mdl_course_modules"], user_habit)
 
     print(f"   X_Sequence shape  : {x_seq.shape}")
@@ -281,9 +305,9 @@ def build_hkar_dataset(tables: Dict[str, pd.DataFrame]) -> Dict[str, Any]:
     print(f"   Recommendations   : {len(recs_df)} öğrenci")
 
     return {
-        "enriched_df":      enriched,
-        "topic_status_df":  topic_status_df,
+        "enriched_df":        enriched,
+        "topic_status_df":    topic_status_df,
         "recommendations_df": recs_df,
-        "X_Sequence":       x_seq,       # (N, TOP_K_WRONG, 3) — LSTM/DKT
-        "X_UserHabit":      user_habit,  # (N, 5)             — Dense
+        "X_Sequence":         x_seq,       # (N, TOP_K_WRONG, 3) — LSTM/DKT
+        "X_UserHabit":        user_habit,  # (N, 5)             — Dense
     }

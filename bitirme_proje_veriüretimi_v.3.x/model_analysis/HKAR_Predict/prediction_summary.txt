@@ -1,0 +1,20 @@
+==============================================================
+  HKAR TAHMİN DAĞILIMI ÖZETİ
+  Kaynak  : outputs/predict/hkar_predictions.json
+  N       : 1000
+  Tarih   : 2026-05-05 11:15:34
+==============================================================
+
+── pred_segment  (kategorik) ────────────────────────
+  S1_Başarılı           :     0  (  0.0%)
+  S2_Orta               :     0  (  0.0%)
+  S3_İstikrarsız        :     0  (  0.0%)
+  S4_Terk               :  1000  (100.0%)
+
+── Ortalama Confidence (tüm öğrenciler üzerinden) ───
+  S1_Başarılı           : ort=  0.0%  std=  0.0%
+  S2_Orta               : ort=  0.0%  std=  0.0%
+  S3_İstikrarsız        : ort=  0.0%  std=  0.0%
+  S4_Terk               : ort=100.0%  std=  0.0%
+
+==============================================================

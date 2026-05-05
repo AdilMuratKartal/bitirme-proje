@@ -51,11 +51,11 @@ from engine import SimulationEngine
 from feature_mimo import build_mimo_dataset
 from feature_hkar import build_hkar_dataset
 from student_registry import STUDENT_REGISTRY
-from local.csv_data_generator import export_tables_to_csv
+from datafile_generator.csv.csv_data_generator import save_tables, load_tables
 
 # ── Yol sabitleri ─────────────────────────────────────────────────
 SAVED_MODELS_DIR     = os.path.join(ROOT, "saved_models")
-OUTPUTS_DIR          = os.path.join(ROOT, "outputs")
+OUTPUTS_DIR          = os.path.join(ROOT, "outputs", "train")
 MIMO_MODEL_PATH      = os.path.join(SAVED_MODELS_DIR, "mimo_model.keras")
 HKAR_MODEL_PATH      = os.path.join(SAVED_MODELS_DIR, "hkar_model.keras")
 MIMO_META_PATH       = os.path.join(SAVED_MODELS_DIR, "mimo_meta.pkl")
@@ -193,18 +193,10 @@ def train_mimo(mimo_ds: dict) -> dict:
     print("\n  [MIMO] Veriler hazırlanıyor...")
 
     X_time   = mimo_ds["X_Time"].astype(np.float32)    # (N, lookback, 2)
-    X_static = mimo_ds["X_Static"].astype(np.float32)  # (N, 5)
+    X_static = mimo_ds["X_Static"].astype(np.float32)  # (N, 6) — current_week dahil
     y_risk   = mimo_ds["y_risk"].astype(np.float32)    # (N,)
     y_grade  = mimo_ds["y_grade"].astype(np.float32)   # (N,)
-
-    # Segment etiketlerini indekse çevir
-    y_seg = (
-        STUDENT_REGISTRY["segment"]
-        .map(_SEG_MAP)
-        .fillna(0)
-        .astype(np.int32)
-        .values
-    )  # (N,)
+    y_seg    = mimo_ds["y_segment"].astype(np.int32)   # (N,) — feature_mimo'dan
 
     N = X_time.shape[0]
     print(f"  [MIMO] Toplam örnek: {N}  |  X_Time: {X_time.shape}  |  X_Static: {X_static.shape}")
@@ -507,18 +499,47 @@ def main() -> None:
 
     _ensure_dirs()
 
-    # ── 1. Simülasyon ──────────────────────────────────────────────
-    print("\n[1/4] Simülasyon başlatılıyor...")
-    eng    = SimulationEngine()
-    tables = eng.simulate_full_semester(weeks=CFG.general.n_weeks)
-    print(f"  Üretilen tablo sayısı: {len(tables)}")
+    # ── 1. Veri üret veya yükle ────────────────────────────────────
+    _TRAIN_DATA_DIR = "output/train"
+    _data_missing   = not os.path.isdir(os.path.join(_TRAIN_DATA_DIR, "raw_tables"))
 
-    # Tablolar eğitimden önce local/csv_exports/ klasörüne kalıcı olarak kaydedilir
-    export_tables_to_csv(tables)
+    if _data_missing:
+        print("[Veri] output/train/raw_tables/ bulunamadi -- simulasyon zorunlu.")
+        _gen = True
+    else:
+        ans  = input("\nYeni egitim verisi uretilsin mi? (E/H): ").strip().upper()
+        _gen = (ans == "E")
 
-    # ── 2. MIMO ────────────────────────────────────────────────────
-    print("\n[2/4] MIMO özellikleri hesaplanıyor...")
-    mimo_ds = build_mimo_dataset(tables)
+    if _gen:
+        print("\n[1/4] Simulasyon baslatiliyor...")
+        eng    = SimulationEngine()
+        tables = eng.simulate_full_semester(weeks=CFG.general.n_weeks)
+        print(f"  Uretilen tablo sayisi: {len(tables)}")
+        save_tables(tables, _TRAIN_DATA_DIR)
+    else:
+        print("\n[1/4] Mevcut veriler yukleniyor...")
+        tables = load_tables(_TRAIN_DATA_DIR)
+        print(f"  {len(tables)} tablo yuklendi.")
+
+    # ── 2. MIMO — Multi-Cutoff Eğitim ─────────────────────────────
+    print("\n[2/4] MIMO özellikleri hesaplanıyor (multi-cutoff)...")
+    _TRAIN_CUTOFFS = [4, 6, 8, 10, 12]
+    all_x_time, all_x_static = [], []
+    all_y_risk, all_y_grade, all_y_seg = [], [], []
+    for cw in _TRAIN_CUTOFFS:
+        ds = build_mimo_dataset(tables, cutoff_week=cw)
+        all_x_time.append(ds["X_Time"])
+        all_x_static.append(ds["X_Static"])
+        all_y_risk.append(ds["y_risk"])
+        all_y_grade.append(ds["y_grade"])
+        all_y_seg.append(ds["y_segment"])
+    mimo_ds = {
+        "X_Time":    np.concatenate(all_x_time),
+        "X_Static":  np.concatenate(all_x_static),
+        "y_risk":    np.concatenate(all_y_risk),
+        "y_grade":   np.concatenate(all_y_grade),
+        "y_segment": np.concatenate(all_y_seg),
+    }
     print(f"  X_Time   : {mimo_ds['X_Time'].shape}")
     print(f"  X_Static : {mimo_ds['X_Static'].shape}")
 
@@ -537,7 +558,7 @@ def main() -> None:
         X_static_norm = scaler.transform(mimo_ds["X_Static"]).astype(np.float32)
         y_risk        = mimo_ds["y_risk"].astype(np.float32)
         y_grade       = mimo_ds["y_grade"].astype(np.float32)
-        y_seg         = (STUDENT_REGISTRY["segment"].map(_SEG_MAP).fillna(0).astype(np.int32).values)
+        y_seg         = mimo_ds["y_segment"].astype(np.int32)
         _write_mimo_predictions(model, X_time, X_static_norm, y_risk, y_grade, y_seg,
                                 meta["grade_min"], meta["grade_max"])
 

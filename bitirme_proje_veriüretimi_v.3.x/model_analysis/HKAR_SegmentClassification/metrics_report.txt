@@ -1,0 +1,27 @@
+============================================================
+  MODEL ANALİZ RAPORU
+  Model     : HKAR_SegmentClassification
+  Görev     : CLASSIFICATION
+  Örnekler  : 1000
+  Tarih     : 2026-05-05 11:56:23
+============================================================
+
+── Sınıflandırma Metrikleri ────────────────────
+  Accuracy  : 0.8380
+  F1 (macro): 0.8443
+  Precision : 0.8524
+  Recall    : 0.8385
+
+── Sınıf Bazlı Rapor ───────────────────────────
+                  precision    recall  f1-score   support
+  
+     S1_Başarılı       0.88      0.92      0.90       238
+         S2_Orta       0.80      0.85      0.83       366
+  S3_İstikrarsız       0.80      0.74      0.77       255
+         S4_Terk       0.92      0.84      0.88       141
+  
+        accuracy                           0.84      1000
+       macro avg       0.85      0.84      0.84      1000
+    weighted avg       0.84      0.84      0.84      1000
+
+============================================================

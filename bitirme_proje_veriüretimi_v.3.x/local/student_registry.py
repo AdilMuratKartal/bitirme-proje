@@ -50,12 +50,20 @@ def build_student_registry() -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _build_dropout_map(df: pd.DataFrame) -> dict:
+    """dropout_week sütunundaki NaN değerlerini None'a dönüştürerek dict üretir."""
+    return {
+        int(uid): (None if pd.isna(dw) else int(dw))
+        for uid, dw in zip(df["userid"], df["dropout_week"])
+    }
+
+
 # ─── Singleton: bir kez üret, her yerden import et ───────────────
 STUDENT_REGISTRY: pd.DataFrame = build_student_registry()
 
 # Hızlı lookup dict'leri (O(1) erişim)
 _SEG_MAP:     dict = dict(zip(STUDENT_REGISTRY["userid"], STUDENT_REGISTRY["segment"]))
-_DROPOUT_MAP: dict = dict(zip(STUDENT_REGISTRY["userid"], STUDENT_REGISTRY["dropout_week"]))
+_DROPOUT_MAP: dict = _build_dropout_map(STUDENT_REGISTRY)
 
 
 def get_profile(userid: int) -> SegmentProfile:
@@ -85,3 +93,18 @@ def is_active_in_week(userid: int, week: int) -> bool:
     if dw is None:
         return True
     return week <= dw
+
+
+def set_registry(df: pd.DataFrame) -> None:
+    """
+    STUDENT_REGISTRY'yi ve lookup dict'lerini canlı günceller.
+    engine_pkg/setup.py ve handlers.py'nin 'import student_registry as _sr'
+    üzerinden eriştiği modül-seviye değişkenleri in-place değiştirir,
+    donmuş yerel bağlamaları atlatır.
+    """
+    global STUDENT_REGISTRY
+    STUDENT_REGISTRY = df
+    _SEG_MAP.clear()
+    _SEG_MAP.update(dict(zip(df["userid"], df["segment"])))
+    _DROPOUT_MAP.clear()
+    _DROPOUT_MAP.update(_build_dropout_map(df))
