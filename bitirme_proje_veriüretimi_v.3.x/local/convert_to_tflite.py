@@ -1,5 +1,5 @@
 """
-local/convert_to_tflite.py — Keras → TFLite + meta.pkl → meta.json
+local/convert_to_tflite.py — Keras -> TFLite + meta.pkl -> meta.json
 
 Calistirma (.venv_gpu aktifken):
     python local/convert_to_tflite.py
@@ -86,7 +86,7 @@ def convert_keras_to_tflite(name: str) -> None:
     interp.allocate_tensors()
     _print_tensor_info(interp, name.upper())
 
-    # 3. meta.pkl → meta.json
+    # 3. meta.pkl -> meta.json
     if not os.path.exists(meta_pkl):
         print(f"  [UYARI] Meta pkl bulunamadi: {meta_pkl}  (JSON atlanacak)")
         return
@@ -101,7 +101,7 @@ def convert_keras_to_tflite(name: str) -> None:
 
 def main() -> None:
     print(_SEP)
-    print("  Keras → TFLite + meta.pkl → meta.json")
+    print("  Keras -> TFLite + meta.pkl -> meta.json")
     print(f"  Kaynak : {_SRC}")
     print(f"  Hedef  : {_DST}")
     print(_SEP)

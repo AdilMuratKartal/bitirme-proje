@@ -18,48 +18,56 @@ _RENDER_BACKEND = os.path.dirname(
 _SAVED_MODELS_DIR = os.path.join(_RENDER_BACKEND, "saved_models")
 
 _REQUIRED_FILES = [
-    "mimo_model.tflite",
-    "hkar_model.tflite",
+    "mimo_model.onnx",
+    "hkar_model.onnx",
     "mimo_meta.json",
     "hkar_meta.json",
 ]
 
 
-def _validate_tflite_shapes(models_dir: str) -> None:
+def _validate_onnx_shapes(models_dir: str) -> None:
     """
-    TFLite tensor sekillerini dogrula.
-    Shape tabanli esleme (predict.py) icin on kosullar:
-      MIMO: 3D girdi (X_Time) + 2D girdi (X_Static), 3 cikis (risk, grade, segment-4)
-      HKAR: 3D girdi (X_Sequence) + 2D girdi (X_UserHabit), 1 cikis (segment-4)
+    ONNX tensor adlari ve sekillerini dogrula.
+    MIMO: X_Time[1,n,2] + X_Static[1,6] -> y_risk, y_grade, y_segment[1,4]
+    HKAR: X_Sequence[1,10,3] + X_UserHabit[1,5] -> y_segment[1,4]
     """
-    from features.predict import _load_tflite, _MIMO_TFLITE_PATH, _HKAR_TFLITE_PATH
+    from features.predict import _load_onnx, _MIMO_ONNX_PATH, _HKAR_ONNX_PATH
 
-    mimo = _load_tflite(_MIMO_TFLITE_PATH)
-    inp  = mimo.get_input_details()
-    out  = sorted(mimo.get_output_details(), key=lambda d: d['index'])
+    mimo     = _load_onnx(_MIMO_ONNX_PATH)
+    inp_map  = {inp.name: inp for inp in mimo.get_inputs()}
+    out_list = [out.name for out in mimo.get_outputs()]
 
-    has_3d = any(len(d['shape']) == 3 for d in inp)
-    has_2d = any(len(d['shape']) == 2 for d in inp)
-    if not (has_3d and has_2d):
+    for expected in ("X_Time", "X_Static"):
+        if expected not in inp_map:
+            raise RuntimeError(
+                f"MIMO ONNX: '{expected}' girdisi bulunamadi. "
+                f"Mevcut: {list(inp_map.keys())}"
+            )
+    if "y_segment" not in out_list:
         raise RuntimeError(
-            f"MIMO tensor girdileri beklenmiyor: "
-            f"{[(d['name'], list(d['shape'])) for d in inp]}"
+            f"MIMO ONNX: 'y_segment' cikisi bulunamadi. Mevcut: {out_list}"
         )
-    if len(out) < 3 or out[2]['shape'][-1] != 4:
+    if inp_map["X_Static"].shape[-1] != 6:
         raise RuntimeError(
-            f"MIMO y_segment (4 sinif) 3. cikista bulunamadi: "
-            f"{[list(d['shape']) for d in out]}"
-        )
-
-    hkar  = _load_tflite(_HKAR_TFLITE_PATH)
-    out_h = hkar.get_output_details()
-    if not out_h or out_h[0]['shape'][-1] != 4:
-        raise RuntimeError(
-            f"HKAR cikis (4 sinif) bulunamadi: "
-            f"{[list(d['shape']) for d in out_h]}"
+            f"MIMO X_Static 6 ozellik bekleniyor, bulundu: {inp_map['X_Static'].shape}"
         )
 
-    logger.info("tflite_shapes_validated")
+    hkar      = _load_onnx(_HKAR_ONNX_PATH)
+    hinp_map  = {inp.name: inp for inp in hkar.get_inputs()}
+    hout_list = [out.name for out in hkar.get_outputs()]
+
+    for expected in ("X_Sequence", "X_UserHabit"):
+        if expected not in hinp_map:
+            raise RuntimeError(
+                f"HKAR ONNX: '{expected}' girdisi bulunamadi. "
+                f"Mevcut: {list(hinp_map.keys())}"
+            )
+    if "y_segment" not in hout_list:
+        raise RuntimeError(
+            f"HKAR ONNX: 'y_segment' cikisi bulunamadi. Mevcut: {hout_list}"
+        )
+
+    logger.info("onnx_shapes_validated")
 
 
 class ModelRegistry:
@@ -98,19 +106,19 @@ class ModelRegistry:
 
         # lru_cache'i doldur: _load_tflite ve _load_meta_json path argumaniyla cagrilmali
         from features.predict import (
-            _load_tflite,
+            _load_onnx,
             _load_meta_json,
-            _MIMO_TFLITE_PATH,
-            _HKAR_TFLITE_PATH,
+            _MIMO_ONNX_PATH,
+            _HKAR_ONNX_PATH,
             _MIMO_META_PATH,
             _HKAR_META_PATH,
         )
 
-        _load_tflite(_MIMO_TFLITE_PATH)
-        logger.info("model_warmed_up", extra={"file": "mimo_model.tflite"})
+        _load_onnx(_MIMO_ONNX_PATH)
+        logger.info("model_warmed_up", extra={"file": "mimo_model.onnx"})
 
-        _load_tflite(_HKAR_TFLITE_PATH)
-        logger.info("model_warmed_up", extra={"file": "hkar_model.tflite"})
+        _load_onnx(_HKAR_ONNX_PATH)
+        logger.info("model_warmed_up", extra={"file": "hkar_model.onnx"})
 
         _load_meta_json(_MIMO_META_PATH)
         logger.info("meta_warmed_up", extra={"file": "mimo_meta.json"})
@@ -118,8 +126,8 @@ class ModelRegistry:
         _load_meta_json(_HKAR_META_PATH)
         logger.info("meta_warmed_up", extra={"file": "hkar_meta.json"})
 
-        # Tensor sekil dogrulamasi
-        _validate_tflite_shapes(models_dir)
+        # ONNX tensor ad/sekil dogrulamasi
+        _validate_onnx_shapes(models_dir)
 
         instance._loaded = True
         cls._instance = instance

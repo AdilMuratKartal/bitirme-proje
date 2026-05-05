@@ -1,0 +1,84 @@
+{
+  "topic_list": [
+    "Temel Kavramlar",
+    "Değişkenler ve Veri Tipleri",
+    "Kontrol Akışı",
+    "Döngüler",
+    "Fonksiyonlar",
+    "Listeler ve Diziler",
+    "Sözlükler ve Kümeler",
+    "Nesne Yönelimli Programlama",
+    "Hata Yönetimi",
+    "Dosya İşlemleri",
+    "Modüller ve Paketler",
+    "Veritabanı Erişimi",
+    "Web API Kullanımı",
+    "Test ve Debugging",
+    "Proje Uygulaması"
+  ],
+  "topic_to_idx": {
+    "Temel Kavramlar": 0,
+    "Değişkenler ve Veri Tipleri": 1,
+    "Kontrol Akışı": 2,
+    "Döngüler": 3,
+    "Fonksiyonlar": 4,
+    "Listeler ve Diziler": 5,
+    "Sözlükler ve Kümeler": 6,
+    "Nesne Yönelimli Programlama": 7,
+    "Hata Yönetimi": 8,
+    "Dosya İşlemleri": 9,
+    "Modüller ve Paketler": 10,
+    "Veritabanı Erişimi": 11,
+    "Web API Kullanımı": 12,
+    "Test ve Debugging": 13,
+    "Proje Uygulaması": 14
+  },
+  "state_to_idx": {
+    "todo": 0,
+    "invalid": 1,
+    "complete": 2,
+    "needsgrading": 3,
+    "gradedwrong": 4,
+    "gradedright": 5,
+    "gradedpartial": 6
+  },
+  "content_thresholds": {
+    "İzleme": 0.7,
+    "Okuma": 0.55,
+    "Ödev": 0.4,
+    "Forum": 0.3
+  },
+  "component_type_map": {
+    "mod_url": "İzleme",
+    "mod_lesson": "İzleme",
+    "mod_bigbluebuttonbn": "İzleme",
+    "mod_resource": "Okuma",
+    "mod_page": "Okuma",
+    "mod_book": "Okuma",
+    "mod_folder": "Okuma",
+    "mod_assign": "Ödev",
+    "mod_quiz": "Ödev",
+    "mod_workshop": "Ödev",
+    "mod_forum": "Forum"
+  },
+  "seg_map": {
+    "S1": 0,
+    "S2": 1,
+    "S3": 2,
+    "S4": 3
+  },
+  "scaler_mean": [
+    0.0,
+    0.7217718362808228,
+    0.2712281346321106,
+    0.0,
+    0.0
+  ],
+  "scaler_scale": [
+    1.0,
+    0.13021764159202576,
+    0.11748543381690979,
+    1.0,
+    1.0
+  ]
+}
