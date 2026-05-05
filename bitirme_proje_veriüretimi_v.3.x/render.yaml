@@ -11,12 +11,7 @@ services:
     plan: standard                 # 2 GB RAM, always-on, sabit aylik
     rootDir: render_backend
     buildCommand: pip install -r requirements_cpu.txt
-    startCommand: >
-      gunicorn api_gateway_orchestration.api.api:app
-      --workers 2
-      --worker-class uvicorn.workers.UvicornWorker
-      --timeout 60
-      --bind 0.0.0.0:$PORT
+    startCommand: "gunicorn api_gateway_orchestration.api.api:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --timeout 60 --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
         sync: false                # Dashboard'dan inject et (?sslmode=require ekli)
