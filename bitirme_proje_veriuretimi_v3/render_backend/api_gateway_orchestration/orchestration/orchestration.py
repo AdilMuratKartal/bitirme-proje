@@ -20,7 +20,7 @@ from typing import Dict, List, Optional
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from api_gateway_orchestration.orchestration.check_freshness import freshness_status
 from api_gateway_orchestration.orchestration.cache import get_cached_analysis, get_full_cached_result
-from features.predict import predict_student_risk, predict_student_competence
+from features.predict import predict_student_success
 
 logger = logging.getLogger(__name__)
 
@@ -33,53 +33,37 @@ def _chunks(lst: List, n: int):
         yield lst[i:i + n]
 
 
-def _mimo_to_db_row(result: Dict) -> Dict:
-    """predict_student_risk() çıktısını DB satır formatına dönüştürür."""
-    risk = result.get("risk_score", 0.5)
-    if risk >= 0.7:
-        level = "high"
-    elif risk >= 0.4:
-        level = "medium"
-    else:
-        level = "low"
+def _risk_premodel_to_db_row(result: Dict) -> Dict:
+    """
+    predict_student_success() çıktısını DB satır formatına dönüştürür.
+    pass_probability + will_pass API'ye forward edilmek üzere eklenir;
+    upsert SQL'i named-param kullandığından fazladan anahtarları yok sayar.
+    """
     return {
         "user_id":          result["userid"],
         "risk_score":       result["risk_score"],
-        "risk_level":       level,
-        "predicted_grade":  result["predicted_grade"],
-        "model_confidence": max(result.get("segment_probs", {}).values(), default=0.0),
+        "risk_level":       result["risk_level"],
+        "predicted_grade":  None,
+        "model_confidence": result["pass_probability"],
+        "pass_probability": result["pass_probability"],
+        "will_pass":        result["will_pass"],
     }
 
 
-def _hkrt_to_db_rows(result: Dict) -> List[Dict]:
-    """predict_student_competence() çıktısındaki önerileri DB satır listesine dönüştürür."""
-    uid = result["userid"]
-    rows = []
-    for priority, rec in enumerate(result.get("recommendations", []), start=1):
-        rows.append({
-            "user_id":       uid,
-            "topic_id":      rec.get("topic", "unknown"),
-            "resource_type": rec.get("content_type", "Diger"),
-            "priority":      priority,
-            "reason_text":   f"Başarı: {rec.get('success_rate', 0):.2f} | Modüller: {rec.get('module_ids', [])[:3]}",
-        })
-    return rows
-
-
-def _basic_from_mimo(result: Dict, tables: Dict) -> Dict:
-    """MIMO sonucu + tablolardan temel öğrenci değerlerini hesaplar."""
+def _basic_from_result(result: Dict, tables: Dict) -> Dict:
+    """risk_premodel sonucu + tablolardan temel öğrenci değerlerini hesaplar."""
     uid = result["userid"]
     import pandas as pd
     import numpy as np
 
-    grd = tables.get("mdl_grade_grades", pd.DataFrame())
+    grd  = tables.get("mdl_grade_grades", pd.DataFrame())
     comp = tables.get("mdl_course_modules_completion", pd.DataFrame())
     logs = tables.get("mdl_logstore_standard_log", pd.DataFrame())
 
-    u_grd = grd[grd["userid"] == uid] if not grd.empty else pd.DataFrame()
-    gpa = float(u_grd["finalgrade"].mean()) if not u_grd.empty else 0.0
+    u_grd  = grd[grd["userid"] == uid] if not grd.empty else pd.DataFrame()
+    gpa    = float(u_grd["finalgrade"].mean()) if not u_grd.empty else 0.0
 
-    u_comp = comp[comp["userid"] == uid] if not comp.empty else pd.DataFrame()
+    u_comp    = comp[comp["userid"] == uid] if not comp.empty else pd.DataFrame()
     completed = int((u_comp["completionstate"] == 1).sum()) if not u_comp.empty else 0
 
     u_logs = logs[logs["userid"] == uid] if not logs.empty else pd.DataFrame()
@@ -105,8 +89,6 @@ class BatchOrchestrator:
 
     def __init__(self, dao: MoodleDAO, models=None):
         self.dao = dao
-        # models parametresi geriye dönük uyumluluk için tutulur;
-        # gerçek model yükleme predict.py içinde lru_cache ile yapılır
 
     # ─────────────────────────────────────────────────────────
     # MOD A — Hot Path: Tek Öğrenci (on-demand inference)
@@ -127,23 +109,19 @@ class BatchOrchestrator:
 
         # STALE veya PENDING → on-demand inference
         tables = dao.get_batch_tables([uid])
-        mimo_raw  = predict_student_risk(uid, tables)
-        hkrt_raw  = predict_student_competence(uid, tables)
+        risk_premodel_raw = predict_student_success(uid, tables)
 
-        mimo_row   = _mimo_to_db_row(mimo_raw)
-        hkrt_rows  = _hkrt_to_db_rows(hkrt_raw)
-        basic_row  = _basic_from_mimo(mimo_raw, tables)
+        risk_premodel_row = _risk_premodel_to_db_row(risk_premodel_raw)
+        basic_row         = _basic_from_result(risk_premodel_raw, tables)
 
         with dao.transaction() as session:
-            dao.upsert_mimo_analysis([mimo_row], session)
-            dao.upsert_hkrt_analysis(hkrt_rows, session)
+            dao.upsert_mimo_analysis([risk_premodel_row], session)
             dao.upsert_basic_values([basic_row], session)
 
         return {
             "data": {
-                "mimo_analysis":       mimo_row,
-                "hkrt_recommendations": hkrt_rows,
-                "basic_values":         basic_row,
+                "risk_premodel_analysis": risk_premodel_row,
+                "basic_values":          basic_row,
             },
             "meta": {"freshness": "computed_now", "was": status.lower()}
         }
@@ -173,17 +151,14 @@ class BatchOrchestrator:
                 try:
                     tables = _dao.get_batch_tables(batch)
 
-                    mimo_rows, hkrt_rows, basic_rows = [], [], []
+                    risk_premodel_rows, basic_rows = [], []
                     for uid in batch:
-                        mimo_raw = predict_student_risk(uid, tables)
-                        hkrt_raw = predict_student_competence(uid, tables)
-                        mimo_rows.append(_mimo_to_db_row(mimo_raw))
-                        hkrt_rows.extend(_hkrt_to_db_rows(hkrt_raw))
-                        basic_rows.append(_basic_from_mimo(mimo_raw, tables))
+                        raw = predict_student_success(uid, tables)
+                        risk_premodel_rows.append(_risk_premodel_to_db_row(raw))
+                        basic_rows.append(_basic_from_result(raw, tables))
 
                     with _dao.transaction() as session:
-                        _dao.upsert_mimo_analysis(mimo_rows, session)
-                        _dao.upsert_hkrt_analysis(hkrt_rows, session)
+                        _dao.upsert_mimo_analysis(risk_premodel_rows, session)
                         _dao.upsert_basic_values(basic_rows, session)
 
                     gc.collect()
@@ -206,10 +181,10 @@ class BatchOrchestrator:
 
         duration = round(time.time() - t_start, 1)
         summary = {
-            "week":      week,
-            "total":     total,
-            "processed": processed,
-            "failed":    len(failed_ids),
+            "week":       week,
+            "total":      total,
+            "processed":  processed,
+            "failed":     len(failed_ids),
             "duration_s": duration,
         }
         logger.info("weekly_batch_complete", extra=summary)

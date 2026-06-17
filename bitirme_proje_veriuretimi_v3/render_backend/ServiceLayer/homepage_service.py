@@ -200,6 +200,26 @@ def get_homepage(uid: int, dao: MoodleDAO) -> HomepageResponse:
     assign_df = dao.get_assign_events(uid)
     upcoming_events = _upcoming_events(quiz_df, assign_df, now_ts)
 
+    # 5. KPI kartları — dash_02_user_stats (pre-compute yoksa hepsi None)
+    stats = dao.get_dash_user_stats(uid)
+    kpi: dict = {}
+    if stats:
+        kpi = {
+            "focus_score":           stats.get("focus_score"),
+            "focus_score_delta_pct": stats.get("focus_score_delta_pct"),
+            "avg_grade":             stats.get("avg_grade"),
+            "avg_grade_delta":       stats.get("avg_grade_delta"),
+            "study_streak_days":     stats.get("study_streak_days"),
+            "streak_delta":          stats.get("streak_delta"),
+            "late_assignment_count": stats.get("late_assignment_count"),
+            "total_study_minutes":   stats.get("total_study_minutes"),
+            "avg_session_minutes":   stats.get("avg_session_minutes"),
+            "sessions_per_active_day": stats.get("sessions_per_active_day"),
+            "last_active_date": (
+                str(stats["last_active_date"]) if stats.get("last_active_date") else None
+            ),
+        }
+
     return HomepageResponse(
         user_name=user_name,
         competency_pcts=competency_pcts,
@@ -208,4 +228,5 @@ def get_homepage(uid: int, dao: MoodleDAO) -> HomepageResponse:
         upcoming_events=upcoming_events,
         recent_activities=recent_activities,
         user_id=uid,
+        **kpi,
     )

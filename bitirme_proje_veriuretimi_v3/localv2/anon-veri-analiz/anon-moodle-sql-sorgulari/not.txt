@@ -1,0 +1,1 @@
+İÇİNDEKİ SQL SORGULARI TABLOLAR TAMAMEN mdl_ üzerinedir. Yani ya bunlar değişçek yada iki veriyide mdl_ yapıcan klasör isimleri farklı olucak

@@ -27,7 +27,7 @@ import pandas as pd
 from typing import Dict, List, Any
 
 from config import CFG, COMPONENT_TYPE_MAP, FUTURE_CUTOFF_WEEK
-from student_registry import STUDENT_REGISTRY
+import student_registry as _sr_mod
 
 
 TOP_K_WRONG    = 10
@@ -120,7 +120,7 @@ def analyze_performance(enriched_df: pd.DataFrame) -> pd.DataFrame:
     )
     stats["success_rate"] = (stats["correct"] / stats["total"]).round(3)
 
-    uids     = STUDENT_REGISTRY["userid"].values
+    uids     = _sr_mod.STUDENT_REGISTRY["userid"].values
     full_idx = pd.MultiIndex.from_product([uids, CFG.topics], names=["userid", "topic"])
     stats    = (
         stats.set_index(["userid", "topic"])
@@ -150,7 +150,7 @@ def build_x_sequence(
     topic_to_idx = {t: i for i, t in enumerate(CFG.topics)}
     state_to_idx = {s: i for i, s in enumerate(CFG.step_states)}
 
-    uids   = STUDENT_REGISTRY["userid"].values
+    uids   = _sr_mod.STUDENT_REGISTRY["userid"].values
     tensor = np.zeros((len(uids), TOP_K_WRONG, N_SEQ_FEATURES), dtype=np.float32)
 
     wrong     = enriched_df[enriched_df["is_correct"] == 0]
@@ -190,7 +190,7 @@ def build_x_user_habit(log_df: pd.DataFrame) -> np.ndarray:
     Shape: (N, 5)
     """
     content_types = ["İzleme", "Okuma", "Ödev", "Forum", "Diğer"]
-    uids          = STUDENT_REGISTRY["userid"].values
+    uids          = _sr_mod.STUDENT_REGISTRY["userid"].values
 
     log          = log_df.copy()
     log["ctype"] = log["component"].map(COMPONENT_TYPE_MAP).fillna("Diğer")
@@ -219,7 +219,7 @@ def recommend_content(
         course_mod_df.groupby(["topic", "content_type"])["id"]
                      .apply(list).to_dict()
     )
-    uids    = STUDENT_REGISTRY["userid"].values
+    uids    = _sr_mod.STUDENT_REGISTRY["userid"].values
     records = []
 
     for i, uid in enumerate(uids):

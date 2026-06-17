@@ -19,12 +19,18 @@ class OngoingCourseGrade(BaseModel):
     course_id: int
     course_name: str
     current_grade: Optional[float]           # mdl_grade_grades'den gerçek not
-    risk_score: Optional[float]              # MIMO çıktısı (0.0–1.0)
+    risk_score: Optional[float]              # risk_premodel çıktısı (0.0–1.0)
     risk_level: Optional[str]               # "high" / "medium" / "low"
-    predicted_grade: Optional[float]         # MIMO tahmin notu (0–100)
-    failure_risk_percentage: Optional[float] # None eğer PENDING veya MIMO henüz yok
+    predicted_grade: Optional[float]         # geriye dönük uyumluluk (None)
+    pass_probability: Optional[float] = None # risk_premodel geçme olasılığı (0.0–1.0)
+    will_pass: Optional[int] = None          # risk_premodel: 1 = geçer, 0 = kalır
+    failure_risk_percentage: Optional[float] # None eğer PENDING veya model henüz yok
     freshness_status: str                    # "fresh" / "stale" / "pending"
     explanation_text: str                    # common_utils.get_risk_explanation()
+    completion_pct: Optional[float] = None           # dash_03: tamamlanma %
+    total_visible_modules: Optional[int] = None      # dash_03: görünür modül sayısı
+    completed_modules: Optional[int] = None          # dash_03: tamamlanan modül sayısı
+    next_expected_date: Optional[str] = None         # dash_03: en yakın deadline
 
 
 class CompletedCourseDetail(BaseModel):
@@ -33,9 +39,8 @@ class CompletedCourseDetail(BaseModel):
     quiz_avg: Optional[float]
     assign_avg: Optional[float]
     final_grade: Optional[float]
-    grade_summary: str                       # "İyi performans, 85/100"
-    mimo_risk_score: Optional[float]
-    hkar_weak_topics: List[str]              # top-3 zayıf konu
+    grade_summary: str
+    risk_score: Optional[float]
 
 
 class GradesPageResponse(BaseModel):
@@ -88,7 +93,7 @@ class CompetencyItem(BaseModel):
 
 class CompetenciesResponse(BaseModel):
     competencies: List[CompetencyItem]   # sabit 4 eleman
-    predicted_class: Optional[str]       # HKAR'dan S1/S2/S3/S4
+    predicted_class: Optional[str]       # risk_premodel: "Başarılı" / "Başarısız"
     overall_completion: float            # ortalama %
     user_id: int
 
@@ -146,4 +151,54 @@ class HomepageResponse(BaseModel):
     recent_grades: List[HomepageGrade]    # max 6, timemodified DESC
     upcoming_events: List[HomepageEvent]  # yaklaşan quiz+ödev
     recent_activities: List[str]          # son 30 günün benzersiz aktivite adları
+    # KPI kartları — dash_02_user_stats (pre-compute yoksa None)
+    focus_score: Optional[float] = None
+    focus_score_delta_pct: Optional[float] = None
+    avg_grade: Optional[float] = None
+    avg_grade_delta: Optional[float] = None
+    study_streak_days: Optional[int] = None
+    streak_delta: Optional[int] = None
+    late_assignment_count: Optional[int] = None
+    total_study_minutes: Optional[float] = None
+    avg_session_minutes: Optional[float] = None
+    sessions_per_active_day: Optional[float] = None
+    last_active_date: Optional[str] = None
+    user_id: int
+
+
+# ─────────────────────────────────────────────────────────────────
+# HEATMAP PAGE (aktivite heatmap 7×24)
+# ─────────────────────────────────────────────────────────────────
+
+class HeatmapCell(BaseModel):
+    weekday: int        # 0=Pazartesi, 6=Pazar
+    hour: int           # 0-23
+    event_count: int
+    session_starts: int
+
+
+class HeatmapResponse(BaseModel):
+    data: List[HeatmapCell]   # 168 hücre (7×24)
+    user_id: int
+
+
+# ─────────────────────────────────────────────────────────────────
+# COURSE ANALYTICS PAGE (dash_05)
+# ─────────────────────────────────────────────────────────────────
+
+class CourseAnalyticsItem(BaseModel):
+    courseid: int
+    assign_completion_rate: Optional[float] = None
+    quiz_completion_rate: Optional[float] = None
+    avg_daily_minutes: Optional[float] = None
+    forum_total: Optional[int] = None
+    forum_interactions: Optional[int] = None
+    forum_interaction_rate: Optional[float] = None
+    page_total: Optional[int] = None
+    page_viewed: Optional[int] = None
+    page_view_rate: Optional[float] = None
+
+
+class CourseAnalyticsResponse(BaseModel):
+    courses: List[CourseAnalyticsItem]
     user_id: int

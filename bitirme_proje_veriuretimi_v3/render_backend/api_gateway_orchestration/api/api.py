@@ -34,8 +34,10 @@ from api_gateway_orchestration.orchestration.model_registry import ModelRegistry
 from api_gateway_orchestration.orchestration.orchestration import BatchOrchestrator
 from schemas import (
     CompetenciesResponse,
+    CourseAnalyticsResponse,
     EventsResponse,
     GradesPageResponse,
+    HeatmapResponse,
     HomepageResponse,
     LearningPathResponse,
 )
@@ -44,6 +46,8 @@ from ServiceLayer.homepage_service import get_homepage
 from ServiceLayer.learning_path_service import get_learning_path
 from ServiceLayer.competencies_service import get_competencies
 from ServiceLayer.events_service import get_events
+from ServiceLayer.heatmap_service import get_heatmap
+from ServiceLayer.course_analytics_service import get_course_analytics
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -125,7 +129,7 @@ async def grades(
     dao: Annotated[MoodleDAO, Depends(get_dao)],
     token: Annotated[dict, Depends(verify_firebase_token)],
 ):
-    """Notlar sayfası: devam eden kurslar (MIMO + freshness) + biten kurslar (arşiv)."""
+    """Notlar sayfası: devam eden kurslar (risk_premodel + freshness) + biten kurslar (arşiv)."""
     orch = _get_orchestrator(dao)
     return get_grades_page(uid, dao, orch)
 
@@ -174,6 +178,26 @@ async def get_basic_values(
             status_code=202,
         )
     return values
+
+
+@app.get("/api/student/{uid}/heatmap", response_model=HeatmapResponse)
+async def heatmap(
+    uid: int,
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+    token: Annotated[dict, Depends(verify_firebase_token)],
+):
+    """Aktivite heatmap: weekday × hour bazlı 7×24 = 168 hücre."""
+    return get_heatmap(uid, dao)
+
+
+@app.get("/api/student/{uid}/course-analytics", response_model=CourseAnalyticsResponse)
+async def course_analytics(
+    uid: int,
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+    token: Annotated[dict, Depends(verify_firebase_token)],
+):
+    """Kurs analitiği: assign/quiz tamamlama oranları + forum/page metrikleri."""
+    return get_course_analytics(uid, dao)
 
 
 @app.post("/api/batch/run-weekly")

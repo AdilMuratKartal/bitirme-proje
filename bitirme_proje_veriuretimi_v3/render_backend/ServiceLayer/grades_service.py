@@ -3,7 +3,7 @@ render_backend/ServiceLayer/grades_service.py — Notlar Sayfası Servisi
 
 get_grades_page(uid, dao, orchestrator) → GradesPageResponse
 
-Devam eden kurslar: MIMO analizi + freshness.
+Devam eden kurslar: risk_premodel analizi + freshness.
 Biten kurslar: arşiv notlar (quiz/ödev/final from grade_grades).
 """
 
@@ -39,22 +39,19 @@ def get_grades_page(
     1. Tüm kursları çek.
     2. Öğrencinin not detaylarını çek.
     3. Her kursu ongoing/completed olarak ayır (enddate < now → completed).
-    4. Ongoing kurslar için orchestrator üzerinden MIMO analizi al.
+    4. Ongoing kurslar için orchestrator üzerinden risk_premodel analizi al.
     5. Completed kurslar için not ortalamalarını hesapla.
     6. GradesPageResponse döndür.
     """
     now_ts = int(time.time())
 
-    courses_df = dao.get_courses()
-    grade_df   = dao.get_student_grade_details(uid)
-    hkrt_recs  = dao.get_hkrt_analysis(uid)
+    courses_df  = dao.get_courses()
+    grade_df    = dao.get_student_grade_details(uid)
+    progress_df = dao.get_dash_course_progress(uid)
 
-    # Zayıf konu listesi (priority sıralı, top-3)
-    weak_topics: List[str] = [r["topic_id"] for r in hkrt_recs[:3]]
-
-    # MIMO analizi — orchestrator hot-path (FRESH → cache, STALE/PENDING → predict)
-    analysis = orchestrator.get_student_analysis(uid, dao)
-    mimo_data = analysis.get("data", {}).get("mimo_analysis") or {}
+    # risk_premodel analizi — orchestrator hot-path (FRESH → cache, STALE/PENDING → predict)
+    analysis            = orchestrator.get_student_analysis(uid, dao)
+    risk_premodel_data  = analysis.get("data", {}).get("risk_premodel_analysis") or {}
     freshness = analysis.get("meta", {}).get("freshness", "pending")
 
     ongoing_courses: List[OngoingCourseGrade]    = []
@@ -68,12 +65,12 @@ def get_grades_page(
         if end > 0 and end < now_ts:
             # ── Biten kurs ──────────────────────────────────────
             completed_courses.append(
-                _build_completed(cid, cname, grade_df, mimo_data, weak_topics)
+                _build_completed(cid, cname, grade_df, risk_premodel_data)
             )
         else:
             # ── Devam eden kurs ─────────────────────────────────
             ongoing_courses.append(
-                _build_ongoing(cid, cname, grade_df, mimo_data, freshness)
+                _build_ongoing(cid, cname, grade_df, risk_premodel_data, freshness, progress_df)
             )
 
     return GradesPageResponse(
@@ -91,8 +88,9 @@ def _build_ongoing(
     cid: int,
     cname: str,
     grade_df: pd.DataFrame,
-    mimo_data: dict,
+    risk_premodel_data: dict,
     freshness: str,
+    progress_df: pd.DataFrame,
 ) -> OngoingCourseGrade:
     # Gerçek güncel not — grade_items.itemtype = "course" bu kurs için
     u_grades = grade_df[grade_df["courseid"] == cid] if not grade_df.empty else pd.DataFrame()
@@ -105,10 +103,12 @@ def _build_ongoing(
         else None
     )
 
-    # MIMO alanları — PENDING ise None
-    risk_score      = mimo_data.get("risk_score")
-    risk_level      = mimo_data.get("risk_level")
-    predicted_grade = mimo_data.get("predicted_grade")
+    # risk_premodel alanları — PENDING ise None
+    risk_score       = risk_premodel_data.get("risk_score")
+    risk_level       = risk_premodel_data.get("risk_level")
+    predicted_grade  = risk_premodel_data.get("predicted_grade")
+    pass_probability = risk_premodel_data.get("pass_probability")
+    will_pass        = risk_premodel_data.get("will_pass")
 
     frp: Optional[float] = (
         failure_risk_pct(risk_score) if risk_score is not None else None
@@ -119,6 +119,26 @@ def _build_ongoing(
     else:
         explanation = get_risk_explanation_pending(cname)
 
+    # dash_03_course_progress — tamamlanma bilgileri
+    prog = (
+        progress_df[progress_df["courseid"] == cid]
+        if not progress_df.empty else pd.DataFrame()
+    )
+    completion_pct: Optional[float] = (
+        float(prog.iloc[0]["completion_pct"]) if not prog.empty and pd.notna(prog.iloc[0]["completion_pct"]) else None
+    )
+    total_visible: Optional[int] = (
+        int(prog.iloc[0]["total_visible_modules"]) if not prog.empty and pd.notna(prog.iloc[0]["total_visible_modules"]) else None
+    )
+    completed_mods: Optional[int] = (
+        int(prog.iloc[0]["completed_modules"]) if not prog.empty and pd.notna(prog.iloc[0]["completed_modules"]) else None
+    )
+    next_exp: Optional[str] = (
+        str(prog.iloc[0]["next_expected_date"])
+        if not prog.empty and pd.notna(prog.iloc[0]["next_expected_date"])
+        else None
+    )
+
     return OngoingCourseGrade(
         course_id=cid,
         course_name=cname,
@@ -126,9 +146,15 @@ def _build_ongoing(
         risk_score=risk_score,
         risk_level=risk_level,
         predicted_grade=predicted_grade,
+        pass_probability=pass_probability,
+        will_pass=will_pass,
         failure_risk_percentage=frp,
         freshness_status=freshness,
         explanation_text=explanation,
+        completion_pct=completion_pct,
+        total_visible_modules=total_visible,
+        completed_modules=completed_mods,
+        next_expected_date=next_exp,
     )
 
 
@@ -140,8 +166,7 @@ def _build_completed(
     cid: int,
     cname: str,
     grade_df: pd.DataFrame,
-    mimo_data: dict,
-    weak_topics: List[str],
+    risk_premodel_data: dict,
 ) -> CompletedCourseDetail:
     u_grades = grade_df[grade_df["courseid"] == cid] if not grade_df.empty else pd.DataFrame()
 
@@ -172,6 +197,5 @@ def _build_completed(
         assign_avg=assign_avg,
         final_grade=final_grade,
         grade_summary=format_grade_summary(final_grade, quiz_avg, assign_avg),
-        mimo_risk_score=mimo_data.get("risk_score"),
-        hkar_weak_topics=weak_topics,
+        risk_score=risk_premodel_data.get("risk_score"),
     )

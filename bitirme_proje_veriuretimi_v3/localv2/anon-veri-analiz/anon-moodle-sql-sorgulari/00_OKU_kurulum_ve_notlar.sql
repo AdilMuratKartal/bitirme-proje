@@ -1,0 +1,45 @@
+-- =====================================================================
+-- 00 — KURULUM, ON EK ve BU VERI SETINE OZGU KRITIK NOTLAR
+-- =====================================================================
+-- Bu paket, 2014-2015 anonim Moodle CSV setiniz icin yazilmistir.
+-- Sorgular MySQL/MariaDB sozdizimindedir (Moodle'in dogal veritabani).
+-- PostgreSQL kullaniyorsaniz README'deki donusum tablosuna bakin.
+--
+-- 1) TABLO ADLARI / ON EK
+--    CSV dosyalariniz "anon_" onekli (anon_course.csv ...).
+--    Bu sorgular "mdl_" oneki kullanir (Moodle standardi).
+--    -> Her anon_X.csv dosyasini "mdl_X" adli tablo olarak yukleyin.
+--    -> Oneki "anon_" tutmak isterseniz: tum dosyalarda mdl_ -> anon_ degistirin.
+--
+--    MySQL'e hizli yukleme ornegi (her tablo icin):
+--      CREATE TABLE mdl_course (...);   -- veya bos birakip otomatik sema
+--      LOAD DATA LOCAL INFILE 'anon_course.csv' INTO TABLE mdl_course
+--        FIELDS TERMINATED BY ',' ENCLOSED BY '"' LINES TERMINATED BY '\n'
+--        IGNORE 1 LINES;
+--    DB kurmak istemiyorsaniz DuckDB ile CSV'leri DOGRUDAN sorgulayabilirsiniz
+--    (README'ye bakin). DuckDB'de FROM_UNIXTIME yerine to_timestamp() kullanin.
+--
+-- 2) BU SETIN GERCEKLERI (sorgular buna gore uyarlandi)
+--    * LOG: Yeni 'mdl_logstore_standard_log' YOK. ESKI 'mdl_log' var.
+--      Kolonlari: id, time, userid, ip, course, module, cmid, action, url, info
+--      ('course' = courseId; 'module' = modul adi metni; 'cmid' = course_modules.id)
+--    * TAMAMLAMA: 'mdl_course_completions' ve 'mdl_course_modules_completion' YOK.
+--      "Tamamladi" yerine KANIT kullanin: odev teslimi (assign_submission) veya
+--      bitmis quiz denemesi (quiz_attempts.timefinish > 0).
+--    * KURS BITISI: 'mdl_course.enddate' bu surumde (Moodle <3.2) YOKTUR.
+--      Pencere icin startdate + tahmini sure ya da loglardan gozlenen max kullanin.
+--    * ISIMLER PLACEHOLDER: course.fullname genelde sabit 'nombre', kullanici
+--      ad/eposta alanlari anonimlestirilmistir. GRUPLAMAYI ID ile yapin.
+--      course.shortname kod iceriyor (or. 'T_TP,P_9957,A_6744') ve AYIRT EDICIDIR.
+--    * OLMAYAN TABLOLAR (orijinal scriptlerden cikarildi): h5pactivity*, hvp,
+--      game, lti, assignsubmission_onlinetext, assignsubmission_file,
+--      assignfeedback_comments, grade_outcomes, logstore_standard_log.
+--    * MODUL TIPI: Sabit id ile DEGIL, daima JOIN mdl_modules ile cozulur
+--      (her kurulumun modul id'leri farklidir; sizin set mdl_modules'te 26 tip tutar).
+--
+-- 3) ZAMAN: Unix epoch SANIYE (10 hane). 0 = "ayarlanmamis".
+--    MySQL: FROM_UNIXTIME(x) | PostgreSQL: TO_TIMESTAMP(x) | DuckDB: to_timestamp(x)
+--
+-- 4) NOT (finalgrade): 0 = sisteme GIRILMIS nottur; NULL veya satir-yok = girilmemis/muaf.
+--    "Gecerli not" istediginizde finalgrade IS NOT NULL [AND finalgrade > 0] ayrimina dikkat.
+-- =====================================================================

@@ -23,12 +23,22 @@ def get_cached_analysis(uid: int, dao: MoodleDAO) -> tuple[Optional[Dict], str]:
 
 
 def get_full_cached_result(uid: int, dao: MoodleDAO) -> Dict:
-    """FRESH öğrenci için tüm analiz verilerini birleştirir."""
-    mimo = dao.get_mimo_analysis(uid)
-    hkrt = dao.get_hkrt_analysis(uid)
-    basic = dao.get_basic_values(uid)
+    """
+    FRESH öğrenci için tüm analiz verilerini birleştirir.
+    DB satırında saklanan model_confidence (= pass_probability) üzerinden
+    pass_probability + will_pass türetilir; böylece FRESH ve computed_now
+    yolları aynı anahtar setini döner.
+    """
+    risk_premodel = dao.get_mimo_analysis(uid)
+    basic         = dao.get_basic_values(uid)
+
+    if risk_premodel is not None:
+        conf = risk_premodel.get("model_confidence")
+        if conf is not None:
+            risk_premodel["pass_probability"] = float(conf)
+            risk_premodel["will_pass"]        = int(float(conf) >= 0.5)
+
     return {
-        "mimo_analysis": mimo,
-        "hkrt_recommendations": hkrt,
-        "basic_values": basic,
+        "risk_premodel_analysis": risk_premodel,
+        "basic_values":           basic,
     }

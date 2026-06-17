@@ -41,11 +41,12 @@ sys.path.insert(0, LOCAL)
 import tensorflow as tf
 from sklearn.preprocessing import StandardScaler
 
-from config.predict_config import PREDICT_CUTOFF, PREDICT_OUT_DIR
-from feature_mimo import build_mimo_dataset
+from config.predict_config import PREDICT_CUTOFF, PREDICT_OUT_DIR, PREDICT_SEED
+from feature_mimo import build_x_time, build_x_static, reshape_x_time_3d
 from feature_hkar import build_hkar_dataset
 from datafile_generator.csv.csv_data_generator import load_tables
 from datafile_generator.predict.predict_data_generator import run_predict_simulation
+from datafile_generator.predict.predict_registry import build_predict_registry
 
 # ── Yol sabitleri ─────────────────────────────────────────────────
 SAVED_MODELS_DIR  = os.path.join(ROOT, "saved_models")
@@ -122,11 +123,35 @@ def _run_mimo_inference(tables: dict) -> None:
     grade_max = meta["grade_max"]
 
     print(f"[MIMO] Ozellikler cikariliyor (cutoff=H{PREDICT_CUTOFF})...")
-    ds = build_mimo_dataset(tables, cutoff_week=PREDICT_CUTOFF)
 
-    X_time        = ds["X_Time"].astype(np.float32)
-    X_static_norm = scaler.transform(ds["X_Static"]).astype(np.float32)
-    uids          = ds["x_time_df"]["userid"].values
+    import student_registry as _sr
+    pred_registry = build_predict_registry(seed=PREDICT_SEED)
+    original_reg  = _sr.STUDENT_REGISTRY.copy()
+    _sr.set_registry(pred_registry)
+
+    try:
+        x_time_df   = build_x_time(
+            tables["mdl_logstore_standard_log"],
+            tables["mdl_grade_grades_history"],
+            cutoff_week=PREDICT_CUTOFF,
+        )
+        x_static_df = build_x_static(
+            tables["mdl_logstore_standard_log"],
+            tables["mdl_grade_grades"],
+            tables["mdl_assign"],
+            tables["mdl_assign_submission"],
+            tables["mdl_quiz_attempts"],
+            tables["mdl_course_modules_completion"],
+            tables["mdl_course_modules"],
+            cutoff_week=PREDICT_CUTOFF,
+        )
+    finally:
+        _sr.set_registry(original_reg)
+
+    uids          = x_time_df["userid"].values
+    X_time        = reshape_x_time_3d(x_time_df).astype(np.float32)
+    X_static      = x_static_df.drop(columns="userid").values.astype(np.float32)
+    X_static_norm = scaler.transform(X_static).astype(np.float32)
 
     print(f"  X_Time   : {X_time.shape}")
     print(f"  X_Static : {X_static_norm.shape}")
@@ -183,14 +208,20 @@ def _run_hkar_inference(tables: dict) -> None:
     scaler.n_features_in_ = len(meta["scaler_mean"])
 
     print("[HKAR] Ozellikler cikariliyor...")
-    ds = build_hkar_dataset(tables)
+
+    import student_registry as _sr
+    pred_registry = build_predict_registry(seed=PREDICT_SEED)
+    original_reg  = _sr.STUDENT_REGISTRY.copy()
+    _sr.set_registry(pred_registry)
+
+    try:
+        ds   = build_hkar_dataset(tables)
+        uids = _sr.STUDENT_REGISTRY["userid"].values.copy()
+    finally:
+        _sr.set_registry(original_reg)
 
     X_seq        = ds["X_Sequence"].astype(np.float32)
     X_habit_norm = scaler.transform(ds["X_UserHabit"]).astype(np.float32)
-
-    # Öğrenci ID'lerini doğrudan kayıt defterinden (garantili sıra ve tam liste) al
-    from student_registry import STUDENT_REGISTRY
-    uids = STUDENT_REGISTRY["userid"].values
 
     print(f"  X_Sequence  : {X_seq.shape}")
     print(f"  X_UserHabit : {X_habit_norm.shape}")
@@ -212,10 +243,32 @@ def _run_hkar_inference(tables: dict) -> None:
     df.to_csv(HKAR_PRED_PATH, index=False)
     print(f"  [HKAR] CSV kaydedildi: {HKAR_PRED_PATH}")
 
-    # JSON
-    records = [
-        {
-            "student_id":   int(uids[i]),
+    # JSON — öğrenci bazlı analiz verileri
+    topic_status_df = ds["topic_status_df"]
+    recs_df         = ds["recommendations_df"]
+
+    topic_status_by_uid = {uid: grp for uid, grp in topic_status_df.groupby("userid")}
+    recs_by_uid         = recs_df.set_index("userid")
+
+    records = []
+    for i in range(n):
+        uid = int(uids[i])
+
+        ts_grp = topic_status_by_uid.get(uid, pd.DataFrame())
+        if not ts_grp.empty:
+            weak_topics = (
+                ts_grp[ts_grp["has_data"] & (ts_grp["success_rate"] < 0.6)]
+                .sort_values("success_rate")
+                [["topic", "success_rate", "attempt_count"]]
+                .to_dict("records")
+            )
+        else:
+            weak_topics = []
+
+        recs = recs_by_uid.at[uid, "recommended_content"] if uid in recs_by_uid.index else []
+
+        records.append({
+            "student_id":   uid,
             "pred_segment": _SEG_LABEL[int(pred_seg[i])],
             "confidence": {
                 "S1": round(float(preds[i, 0]), 4),
@@ -223,9 +276,11 @@ def _run_hkar_inference(tables: dict) -> None:
                 "S3": round(float(preds[i, 2]), 4),
                 "S4": round(float(preds[i, 3]), 4),
             },
-        }
-        for i in range(n)
-    ]
+            "analysis": {
+                "weak_topics":     weak_topics,
+                "recommendations": recs,
+            },
+        })
     with open(HKAR_PRED_JSON, "w", encoding="utf-8") as f:
         json.dump(records, f, ensure_ascii=False, indent=2)
     print(f"  [HKAR] JSON kaydedildi: {HKAR_PRED_JSON}")

@@ -30,13 +30,13 @@ import pandas as pd
 from typing import Dict, Any, Optional
 
 from config import CFG, FUTURE_CUTOFF_WEEK
-from student_registry import STUDENT_REGISTRY
+import student_registry as _sr_mod
 
 _SEG_IDX: Dict[str, int] = {"S1": 0, "S2": 1, "S3": 2, "S4": 3}
 
 
 def _uids() -> np.ndarray:
-    return STUDENT_REGISTRY["userid"].values
+    return _sr_mod.STUDENT_REGISTRY["userid"].values
 
 
 def _resolve_cutoff(cutoff_week: Optional[int] = None) -> int:
@@ -267,7 +267,7 @@ def build_mimo_targets(
         "S4": (33.0, 15.0,  5.0,  55.0),
     }
 
-    reg          = STUDENT_REGISTRY.set_index("userid")
+    reg          = _sr_mod.STUDENT_REGISTRY.set_index("userid")
     y_risk_vals  = np.empty(len(uids), dtype=np.float32)
     y_grade_vals = np.empty(len(uids), dtype=np.float32)
     y_seg_vals   = np.empty(len(uids), dtype=np.int32)

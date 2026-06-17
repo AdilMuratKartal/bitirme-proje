@@ -8,6 +8,22 @@ outputs/
 output/
 local/csv_exports/
 local/output/
+data
 .claude/
 claude_state.json
 serviceAccountKey.json
+
+# --- Gizlilik: ham veri + analiz ciktilari (anonim de olsa ogrenci verisi) ---
+data/
+**/cikti/
+*.csv
+*.parquet
+*.sqlite
+*.db
+
+# --- Buyuk model binary'leri (deploy icin *.onnx tutulur; *.pkl tutulmaz) ---
+*.pkl
+*.joblib
+
+# --- Yerel arac / ajan konfigurasyonu (paylasilmaz) ---
+.agents/

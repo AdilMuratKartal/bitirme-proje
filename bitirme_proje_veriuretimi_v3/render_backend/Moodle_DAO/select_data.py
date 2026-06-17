@@ -282,3 +282,78 @@ class SelectMixin:
             return dict(row._mapping) if row else None
         finally:
             session.close()
+
+    # ─────────────────────────────────────────────────────────────
+    # Pre-compute dashboard tabloları (dash_01 – dash_07)
+    # "Backend API'de JOIN yok; her tablo WHERE userid = ? ile okunur."
+    # ─────────────────────────────────────────────────────────────
+
+    def get_dash_user_stats(self, userid: int) -> Optional[Dict]:
+        """dash_user_stats tablosundan tek satır döner. Pre-compute yoksa None."""
+        session = self._session()
+        try:
+            row = session.execute(
+                text("SELECT * FROM dash_user_stats WHERE userid = :uid"),
+                {"uid": userid},
+            ).fetchone()
+            return dict(row._mapping) if row else None
+        finally:
+            session.close()
+
+    def get_dash_course_progress(self, userid: int) -> pd.DataFrame:
+        """dash_course_progress tablosundan kullanıcının tüm kurs satırları."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT courseid, course_fullname, course_shortname, "
+                     "completion_pct, total_visible_modules, completed_modules, "
+                     "avg_grade, next_expected_date, last_activity_date "
+                     "FROM dash_course_progress WHERE userid = :uid"),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_dash_activity_heatmap(self, userid: int) -> pd.DataFrame:
+        """dash_activity_heatmap tablosundan 7×24 = 168 satır döner."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT weekday, hour, event_count, session_starts "
+                     "FROM dash_activity_heatmap WHERE userid = :uid "
+                     "ORDER BY weekday, hour"),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_dash_course_analytics(self, userid: int) -> pd.DataFrame:
+        """dash_course_analytics tablosundan kurs analitiği satırları."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT courseid, assign_completion_rate, quiz_completion_rate, "
+                     "avg_daily_minutes, forum_total, forum_interactions, "
+                     "forum_interaction_rate, page_total, page_viewed, page_view_rate "
+                     "FROM dash_course_analytics WHERE userid = :uid"),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
+
+    def get_dash_upcoming_events(self, userid: int) -> pd.DataFrame:
+        """dash_upcoming_events tablosundan modül bazlı deadline satırları."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT courseid, cmid, expected_date, days_until, is_overdue "
+                     "FROM dash_upcoming_events WHERE userid = :uid "
+                     "ORDER BY expected_date"),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()
