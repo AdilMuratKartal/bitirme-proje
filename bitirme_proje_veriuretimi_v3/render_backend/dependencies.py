@@ -22,7 +22,9 @@ _engine = create_engine(
     max_overflow=2,
     pool_pre_ping=True,
     pool_recycle=1800,
-    connect_args={"sslmode": "require"},
+    # sslmode URL'den gelir:
+    #   internal URL (sslmode yok) → SSL'siz baglanir (Render internal SSL sunmaz)
+    #   external URL (?sslmode=require) → SSL zorlanir
 )
 
 _SessionFactory = sessionmaker(bind=_engine, autocommit=False, autoflush=False)
