@@ -270,6 +270,22 @@ class SelectMixin:
         finally:
             session.close()
 
+    def get_userid_by_firebase_uid(self, firebase_uid: str) -> Optional[int]:
+        """
+        Firebase Auth uid'sinden Moodle userid'sini çözer.
+        Eşleme student_registry.firebase_uid kolonunda tutulur.
+        Kayıt yoksa None (= kullanıcı Firebase'de var ama Moodle'da yok).
+        """
+        session = self._session()
+        try:
+            row = session.execute(
+                text("SELECT userid FROM student_registry WHERE firebase_uid = :uid"),
+                {"uid": firebase_uid},
+            ).fetchone()
+            return row[0] if row else None
+        finally:
+            session.close()
+
     def get_user(self, uid: int) -> Optional[Dict]:
         """Öğrencinin adını ve e-posta bilgisini döner. Kayıt yoksa None."""
         session = self._session()

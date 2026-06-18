@@ -86,6 +86,26 @@ def _get_orchestrator(dao: MoodleDAO) -> BatchOrchestrator:
     return _orchestrator
 
 
+def get_current_userid(
+    token: Annotated[dict, Depends(verify_firebase_token)],
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+) -> int:
+    """
+    Doğrulanmış Firebase token'ından Moodle userid'sini çözer.
+    Akış: Bearer token → verify_firebase_token → uid → student_registry lookup.
+    Frontend kendi id'sini göndermez; userid daima sunucuda token'dan türetilir
+    (IDOR koruması). Eşleme yoksa 403.
+    """
+    firebase_uid = token.get("uid", "")
+    # Dev fallback: Firebase SDK kurulu değilse gateway "dev_user" döndürür.
+    if firebase_uid == "dev_user":
+        return int(os.environ.get("DEV_MOODLE_USERID", "2"))
+    userid = dao.get_userid_by_firebase_uid(firebase_uid)
+    if userid is None:
+        raise HTTPException(status_code=403, detail="Kullanıcı Moodle'da bulunamadı")
+    return userid
+
+
 # ── Endpoints ────────────────────────────────────────────────────
 
 @app.get("/health")
@@ -99,79 +119,72 @@ async def health(dao: Annotated[MoodleDAO, Depends(get_dao)]):
     return {"status": "ok", "models_loaded": _models is not None and _models.loaded}
 
 
-@app.get("/api/student/{uid}/home", response_model=HomepageResponse)
+@app.get("/api/student/me/home", response_model=HomepageResponse)
 async def home(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Ana sayfa özet kartı: kullanıcı adı, yetkinlik %, kurslar, notlar, etkinlikler."""
-    return get_homepage(uid, dao)
+    return get_homepage(userid, dao)
 
 
-@app.get("/api/student/{uid}/dashboard")
+@app.get("/api/student/me/dashboard")
 async def get_dashboard(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """
     Öğrenci özet dashboard'u.
     FRESH → cache'den (~50ms). STALE/PENDING → on-demand predict (~2-4s).
     """
     orch = _get_orchestrator(dao)
-    return orch.get_student_analysis(uid, dao)
+    return orch.get_student_analysis(userid, dao)
 
 
-@app.get("/api/student/{uid}/grades", response_model=GradesPageResponse)
+@app.get("/api/student/me/grades", response_model=GradesPageResponse)
 async def grades(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Notlar sayfası: devam eden kurslar (risk_premodel + freshness) + biten kurslar (arşiv)."""
     orch = _get_orchestrator(dao)
-    return get_grades_page(uid, dao, orch)
+    return get_grades_page(userid, dao, orch)
 
 
-@app.get("/api/student/{uid}/learning-path", response_model=LearningPathResponse)
+@app.get("/api/student/me/learning-path", response_model=LearningPathResponse)
 async def learning_path(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Öğrenme yolu sayfası: son 30 günün aktivite timeline'ı + Chart.js veri seti."""
-    return get_learning_path(uid, dao)
+    return get_learning_path(userid, dao)
 
 
-@app.get("/api/student/{uid}/competencies", response_model=CompetenciesResponse)
+@app.get("/api/student/me/competencies", response_model=CompetenciesResponse)
 async def competencies(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Yetkinlikler sayfası: 4 tür (OKUMA/FORUM/İZLEME/ÖDEV) log-tabanlı tamamlama oranları."""
-    return get_competencies(uid, dao)
+    return get_competencies(userid, dao)
 
 
-@app.get("/api/student/{uid}/events", response_model=EventsResponse)
+@app.get("/api/student/me/events", response_model=EventsResponse)
 async def events(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Etkinlikler sayfası: quiz + ödev deadline'ları (geçmiş/yaklaşan/gelecek)."""
-    return get_events(uid, dao)
+    return get_events(userid, dao)
 
 
-@app.get("/api/student/{uid}/basic")
+@app.get("/api/student/me/basic")
 async def get_basic_values(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """GPA, streak, tamamlanan ders sayısı."""
-    values = dao.get_basic_values(uid)
+    values = dao.get_basic_values(userid)
     if values is None:
         return JSONResponse(
             {"status": "pending", "message": "Temel değerler henüz hazır değil"},
@@ -180,24 +193,22 @@ async def get_basic_values(
     return values
 
 
-@app.get("/api/student/{uid}/heatmap", response_model=HeatmapResponse)
+@app.get("/api/student/me/heatmap", response_model=HeatmapResponse)
 async def heatmap(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Aktivite heatmap: weekday × hour bazlı 7×24 = 168 hücre."""
-    return get_heatmap(uid, dao)
+    return get_heatmap(userid, dao)
 
 
-@app.get("/api/student/{uid}/course-analytics", response_model=CourseAnalyticsResponse)
+@app.get("/api/student/me/course-analytics", response_model=CourseAnalyticsResponse)
 async def course_analytics(
-    uid: int,
+    userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
 ):
     """Kurs analitiği: assign/quiz tamamlama oranları + forum/page metrikleri."""
-    return get_course_analytics(uid, dao)
+    return get_course_analytics(userid, dao)
 
 
 @app.post("/api/batch/run-weekly")

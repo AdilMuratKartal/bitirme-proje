@@ -27,3 +27,6 @@ data/
 
 # --- Yerel arac / ajan konfigurasyonu (paylasilmaz) ---
 .agents/
+
+# --- Tek seferlik gizli scriptler (Firebase seed vb. — ASLA commit'lenmez) ---
+secret_scripts/
