@@ -1,5 +1,7 @@
 import React from 'react';
 import { Card, Button } from '../components';
+import certificateBadges from '../assets/assets/certificate_badges.png';
+import learningPathImg from '../assets/assets/learning_path.png';
 
 interface PlaceholderScreenProps {
   page: string;
@@ -10,13 +12,13 @@ const PH: Record<string, { icon: string; title: string; img: string | null; body
   certificates: {
     icon: 'workspace_premium',
     title: 'Sertifika ve Rozetlerim',
-    img: '/src/assets/certificate_badges.png',
+    img: certificateBadges,
     body: 'Kazanılan sertifikalar ve rozetler burada listelenir. Bu ekran henüz orijinal kod tabanında tasarlanmamıştı.',
   },
   learning: {
     icon: 'route',
     title: 'Öğrenme Patikası',
-    img: '/src/assets/learning_path.png',
+    img: learningPathImg,
     body: 'Önerilen sıradaki modüller ve öğrenme patikan. Bu ekran henüz orijinal kod tabanında tasarlanmamıştı.',
   },
   account: {

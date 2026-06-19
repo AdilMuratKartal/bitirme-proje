@@ -58,10 +58,16 @@ def get_homepage(uid: int, dao: MoodleDAO) -> HomepageResponse:
         for _, c in progress_df.head(6).iterrows():
             cid = int(c["courseid"])
             grade = float(c["avg_grade"]) if pd.notna(c.get("avg_grade")) else None
+            comp_pct = float(c["completion_pct"]) if pd.notna(c.get("completion_pct")) else None
+            total_vis = int(c["total_visible_modules"]) if pd.notna(c.get("total_visible_modules")) else None
+            completed_mods = int(c["completed_modules"]) if pd.notna(c.get("completed_modules")) else None
             active_courses.append(HomepageCourse(
                 course_id=cid,
                 course_name=course_label(cid, c.get("course_fullname")),
                 current_grade=grade,
+                completion_pct=comp_pct,
+                total_visible_modules=total_vis,
+                completed_modules=completed_mods,
             ))
         # Son notlar: avg_grade'i olan kurslar (kurs-bazlı not)
         graded = progress_df[progress_df["avg_grade"].notna()]

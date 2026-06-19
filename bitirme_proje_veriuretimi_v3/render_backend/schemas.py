@@ -137,6 +137,9 @@ class HomepageCourse(BaseModel):
     course_id: int
     course_name: str
     current_grade: Optional[float] = None   # itemtype="course", None=henüz yok
+    completion_pct: Optional[float] = None          # dash_03: tamamlanma %
+    total_visible_modules: Optional[int] = None     # dash_03: görünür modül sayısı
+    completed_modules: Optional[int] = None         # dash_03: tamamlanan modül sayısı
 
 
 class HomepageGrade(BaseModel):

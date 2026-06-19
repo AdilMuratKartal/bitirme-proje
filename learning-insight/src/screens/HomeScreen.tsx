@@ -2,6 +2,8 @@ import React from 'react';
 import { Card, StatCard, Avatar, Tag } from '../components';
 import { LineChart, BarChart, DoughnutChart } from '../components/Charts';
 import { courseColors } from '../data/mockData';
+import certificateBadges from '../assets/assets/certificate_badges.png';
+import learningPathImg from '../assets/assets/learning_path.png';
 
 interface HomeScreenProps {
   onNavigate: (page: string) => void;
@@ -83,6 +85,12 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
   const risk = dashboard.risk_premodel_analysis;
   const basic = dashboard.basic_values;
 
+  // Risk verisi henüz hesaplanmamış olabilir (dash_risk boş → freshness: pending)
+  const hasRisk = risk && risk.risk_level != null;
+  const riskLevelText = hasRisk ? risk.risk_level : 'Hesaplanıyor';
+  const passProbText = risk && risk.pass_probability != null ? `%${Math.round(risk.pass_probability * 100)}` : '—';
+  const riskScoreText = risk && risk.risk_score != null ? `%${risk.risk_score}` : '—';
+
   // Aggregate daily minutes from learningPath dataset for the LineChart
   const weekLabels = (learningPath.dataset || []).map((d: any) => {
     const parts = d.activity_date.split('-');
@@ -103,8 +111,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         
         {/* Risk Level Tag */}
         <div style={{ display: 'flex', gap: '8px' }}>
-          <Tag tone={risk.risk_level === 'Düşük' ? 'green' : risk.risk_level === 'Orta' ? 'amber' : 'red'} variant="solid" size="md">
-            Akademik Risk: {risk.risk_level}
+          <Tag tone={!hasRisk ? 'amber' : risk.risk_level === 'Düşük' ? 'green' : risk.risk_level === 'Orta' ? 'amber' : 'red'} variant="solid" size="md">
+            Akademik Risk: {riskLevelText}
           </Tag>
         </div>
       </div>
@@ -113,7 +121,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
       <div className="li-home__kpis">
         <StatCard
           label="Odak Puanı"
-          value={`${Math.round(basic.focus_score)}%`}
+          value={basic.focus_score != null ? `${Math.round(basic.focus_score)}%` : '—'}
           tone="primary"
           delta="12.3%"
           deltaDir="up"
@@ -122,7 +130,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         />
         <StatCard
           label="Not Ortalaması"
-          value={basic.gpa.toFixed(1)}
+          value={basic.gpa != null ? basic.gpa.toFixed(1) : '—'}
           tone="green"
           delta={null}
           caption="dönem ortalaması"
@@ -130,7 +138,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         />
         <StatCard
           label="Çalışma Serisi"
-          value={`${basic.streak} gün`}
+          value={basic.streak != null ? `${basic.streak} gün` : '—'}
           tone="gold"
           delta="Aktif"
           deltaDir="up"
@@ -139,7 +147,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         />
         <StatCard
           label="Geciken Ödev"
-          value={basic.late_assignments.toString()}
+          value={basic.late_assignments != null ? basic.late_assignments.toString() : '—'}
           tone="red"
           delta={null}
           caption="kalan deadline"
@@ -196,20 +204,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Başarı Olasılığı:</span>
               <span className="li-num" style={{ fontSize: '20px', fontWeight: 'bold', color: 'var(--success)' }}>
-                %{Math.round(risk.pass_probability * 100)}
+                {passProbText}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Risk Skoru:</span>
-              <span className="li-num" style={{ fontSize: '20px', fontWeight: 'bold', color: risk.risk_score > 50 ? 'var(--danger)' : 'var(--primary)' }}>
-                %{risk.risk_score}
+              <span className="li-num" style={{ fontSize: '20px', fontWeight: 'bold', color: (risk && risk.risk_score != null && risk.risk_score > 50) ? 'var(--danger)' : 'var(--primary)' }}>
+                {riskScoreText}
               </span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-secondary)' }}>Geçme Durumu:</span>
-              <Tag tone={risk.will_pass ? 'success' : 'danger'} variant="soft">
-                {risk.will_pass ? 'Dersi Geçiyor' : 'Risk Altında'}
-              </Tag>
+              {!hasRisk ? (
+                <Tag tone="amber" variant="soft">Hesaplanıyor</Tag>
+              ) : (
+                <Tag tone={risk.will_pass ? 'success' : 'danger'} variant="soft">
+                  {risk.will_pass ? 'Dersi Geçiyor' : 'Risk Altında'}
+                </Tag>
+              )}
             </div>
           </div>
         </Card>
@@ -262,7 +274,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
           }}
         >
           <div className="li-imgwrap">
-            <img src="/src/assets/certificate_badges.png" alt="Sertifika ve Rozet" />
+            <img src={certificateBadges} alt="Sertifika ve Rozet" />
           </div>
         </Card>
 
@@ -298,7 +310,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
           }}
         >
           <div className="li-imgwrap li-imgwrap--wide">
-            <img src="/src/assets/learning_path.png" alt="Öğrenme Patikası" />
+            <img src={learningPathImg} alt="Öğrenme Patikası" />
           </div>
         </Card>
       </div>
