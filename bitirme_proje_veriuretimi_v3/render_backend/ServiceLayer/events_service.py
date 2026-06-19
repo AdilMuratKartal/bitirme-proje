@@ -1,13 +1,12 @@
 """
-render_backend/ServiceLayer/events_service.py — Etkinlikler Sayfası Servisi
+render_backend/ServiceLayer/events_service.py — Etkinlikler Servisi (flat)
 
-get_events(uid, dao, reference_date=None) → EventsResponse
+get_events(uid, dao) → EventsResponse
 
-dash-only: etkinlikler dash_module_status'taki assign + quiz modüllerinden türetilir
-(dash_upcoming_events boş olduğu için). Son tarih sırası:
-  expected_date (varsa) → completion_time (tamamlandıysa) → first_view_time.
+dash_module_status'tan assign/quiz/workshop modüllerini düz liste olarak döndürür.
+Sınıflandırma (past/upcoming/future) frontend'de yapılır.
 
-Kategori (ref_ts'e göre): past / upcoming (≤7 gün) / future.
+Tarih önceliği:  expected_date → completion_time → first_view_time
 """
 
 from __future__ import annotations
@@ -19,14 +18,14 @@ from typing import List, Optional
 import pandas as pd
 
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
-from schemas import EventItem, EventsResponse
-from ServiceLayer.common_utils import course_label, days_until, format_date_tr
+from schemas import FlatEventItem, EventsResponse
+from ServiceLayer.common_utils import course_label
 
-_7_DAYS = 7 * 86_400
-_EVENT_TYPES = {"assign": "assignment", "quiz": "quiz", "workshop": "assignment"}
+_EVENT_TYPES = {"assign", "quiz", "workshop"}
 
 
 def _date_to_ts(date_val) -> Optional[int]:
+    """Tarih değerini Unix timestamp'e çevirir. None ise None döner."""
     if date_val is None or (isinstance(date_val, float) and pd.isna(date_val)):
         return None
     try:
@@ -39,19 +38,18 @@ def _date_to_ts(date_val) -> Optional[int]:
         return None
 
 
+def _ts_to_date_str(ts: int) -> str:
+    """Unix timestamp → 'YYYY-MM-DD' string."""
+    return datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+
+
 def get_events(
     uid: int,
     dao: MoodleDAO,
-    reference_date: Optional[datetime] = None,
 ) -> EventsResponse:
-    ref_ts = (
-        int(reference_date.replace(tzinfo=timezone.utc).timestamp())
-        if reference_date
-        else int(time.time())
-    )
-
+    now_ts = int(time.time())
     mod_df = dao.get_dash_module_status(uid)
-    all_items: List[EventItem] = []
+    items: List[FlatEventItem] = []
 
     if not mod_df.empty:
         for _, row in mod_df.iterrows():
@@ -59,6 +57,7 @@ def get_events(
             if mtype not in _EVENT_TYPES:
                 continue
 
+            # Tarih çözümleme: expected_date → completion_time → first_view_time
             due_ts = _date_to_ts(row.get("expected_date"))
             if due_ts is None and pd.notna(row.get("completion_time")) and row.get("completion_time"):
                 due_ts = int(row["completion_time"])
@@ -72,35 +71,25 @@ def get_events(
             if not title or title.lower() in ("nombre", "none", "nan"):
                 title = "Ödev" if mtype != "quiz" else "Quiz"
 
-            all_items.append(EventItem(
-                event_id=int(row["cmid"]) if pd.notna(row.get("cmid")) else 0,
-                event_type=_EVENT_TYPES[mtype],
-                course_id=cid,
+            days_until = (due_ts - now_ts) // 86_400
+            is_completed = bool(row.get("is_completed"))
+
+            items.append(FlatEventItem(
+                userid=uid,
+                courseid=cid,
+                cmid=int(row["cmid"]) if pd.notna(row.get("cmid")) else 0,
+                module_type=mtype,
+                display_name=title,
                 course_name=course_label(cid, None),
-                title=title,
-                due_ts=due_ts,
-                due_date_str=format_date_tr(due_ts),
-                is_submitted=bool(row.get("is_completed")),
-                days_until_due=days_until(due_ts, ref_ts),
+                course_short="",
+                event_date=_ts_to_date_str(due_ts),
+                timestart=due_ts,
+                days_until=days_until,
+                is_overdue=(days_until < 0) and (not is_completed),
+                is_completed=is_completed,
             ))
 
-    past, upcoming, future = [], [], []
-    for item in all_items:
-        if item.due_ts < ref_ts:
-            past.append(item)
-        elif item.due_ts < ref_ts + _7_DAYS:
-            upcoming.append(item)
-        else:
-            future.append(item)
+    # timestart'a göre sırala (en yakın deadline önce)
+    items.sort(key=lambda x: x.timestart)
 
-    past.sort(key=lambda x: x.due_ts, reverse=True)
-    upcoming.sort(key=lambda x: x.due_ts)
-    future.sort(key=lambda x: x.due_ts)
-
-    return EventsResponse(
-        past_events=past,
-        upcoming_events=upcoming,
-        future_events=future,
-        reference_date_str=format_date_tr(ref_ts),
-        user_id=uid,
-    )
+    return EventsResponse(items=items, user_id=uid)

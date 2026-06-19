@@ -76,10 +76,15 @@ def get_current_userid(
 ) -> int:
     """
     Doğrulanmış Firebase token'ından Moodle userid'sini çözer.
-    Akış: Bearer token → verify_firebase_token → uid → student_registry lookup.
-    Frontend kendi id'sini göndermez; userid daima sunucuda token'dan türetilir
-    (IDOR koruması). Eşleme yoksa 403.
+    Öncelikli akış: Token içindeki Custom Claims ('moodle_userid') doğrudan okunur (sıfır DB sorgusu).
+    Yedek akış (fallback): firebase_uid -> student_registry lookup.
     """
+    # 1. Öncelikli olarak Custom Claims kontrol edilir (sıfır DB sorgusu)
+    moodle_userid = token.get("moodle_userid")
+    if moodle_userid is not None:
+        return int(moodle_userid)
+
+    # 2. Yedek plan (Claims henüz yazılmamışsa veya dev modundaysa): DB sorgusu
     firebase_uid = token.get("uid", "")
     # Dev fallback: Firebase SDK kurulu değilse gateway "dev_user" döndürür.
     if firebase_uid == "dev_user":
@@ -88,6 +93,7 @@ def get_current_userid(
     if userid is None:
         raise HTTPException(status_code=403, detail="Kullanıcı Moodle'da bulunamadı")
     return userid
+
 
 
 def _build_dashboard(userid: int, dao: MoodleDAO) -> dict:

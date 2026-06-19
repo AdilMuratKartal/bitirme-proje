@@ -86,7 +86,7 @@ LEAKAGE = {
     "norm_pct", "grade_margin", "grade_margin_pct",
     "finalgrade", "gradepass", "grademax", "grademin",
     "userid", "courseid", "label" ,"kurs_tier","teslim_per_gun","quiz_act_pct","n_quiz_deneme_log1p",
-    "n_teslim_log1p","quiz_act","forum_view","forum_submit","n_quiz_deneme","n_teslim"
+    "n_teslim_log1p","quiz_act","forum_view","forum_submit","n_quiz_deneme","n_teslim","teslim_var"
 }
 
 ML_FEATURES = sorted([c for c in df.columns if c not in LEAKAGE])

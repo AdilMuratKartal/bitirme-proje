@@ -99,26 +99,26 @@ class CompetenciesResponse(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────────
-# EVENTS PAGE
+# EVENTS PAGE  (düz dizi — sınıflandırma frontend'de yapılır)
 # ─────────────────────────────────────────────────────────────────
 
-class EventItem(BaseModel):
-    event_id: int
-    event_type: str              # "quiz" / "assignment"
-    course_id: int
+class FlatEventItem(BaseModel):
+    userid: int
+    courseid: int
+    cmid: int
+    module_type: str            # "assign" / "quiz" / "workshop"
+    display_name: str
     course_name: str
-    title: str
-    due_ts: int                  # Unix timestamp
-    due_date_str: str            # "25 Nisan 2026, Cumartesi"
-    is_submitted: bool
-    days_until_due: Optional[int]  # None → geçmişte
+    course_short: str           # kısa kod (ör. "MATH201"), yoksa ""
+    event_date: str             # "YYYY-MM-DD"
+    timestart: int              # Unix timestamp (UTC gece yarısı)
+    days_until: int             # negatif = geçmiş, pozitif = gelecek
+    is_overdue: bool
+    is_completed: bool
 
 
 class EventsResponse(BaseModel):
-    past_events: List[EventItem]
-    upcoming_events: List[EventItem]   # ref_date'e göre ≤7 gün içinde
-    future_events: List[EventItem]     # >7 gün sonra
-    reference_date_str: str
+    items: List[FlatEventItem]  # düz dizi — sıralama/sınıflandırma frontend'de
     user_id: int
 
 
