@@ -18,7 +18,15 @@ Zaman kaydirma (TIME_OFFSET_S):
 import os, sys, glob, time
 import pandas as pd
 
-DATA_DIR = r"C:\Users\2025\Desktop\proje-veri-seçimi-araştırma\proje-için-toplanılan-veriler\anonim-data"
+# Ham anon veri dizini. Oncelik: ANON_DATA_DIR env -> eski Desktop yolu -> Documents yolu.
+# (Veri tasinabildigi icin var olan ilk dizin otomatik secilir.)
+_CANDIDATE_DATA_DIRS = [
+    os.environ.get("ANON_DATA_DIR"),
+    r"C:\Users\2025\Desktop\proje-veri-seçimi-araştırma\proje-için-toplanılan-veriler\anonim-data",
+    r"C:\Users\2025\Documents\ML-Project\anonim-data",
+]
+DATA_DIR = next((d for d in _CANDIDATE_DATA_DIRS if d and os.path.isdir(d)),
+                _CANDIDATE_DATA_DIRS[1])
 LOG_AYLAR_DIR = os.path.join(DATA_DIR, "log-olarak-aylar")
 PREFIX = "anon_mdl_"
 

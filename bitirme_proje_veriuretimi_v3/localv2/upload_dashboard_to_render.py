@@ -11,7 +11,8 @@ Calistirma (repo kokunden veya herhangi bir yerden):
     .venv_gpu/Scripts/python localv2/upload_dashboard_to_render.py --yes   # onay sormadan
 
 Yuklenen tablolar:
-    7 dash tablosu + golden_users + student_registry  (hepsi if_exists="replace")
+    9 dash tablosu (dash_risk + dash_features dahil) + golden_users + student_registry
+    (hepsi if_exists="replace")
 """
 
 from __future__ import annotations
@@ -43,6 +44,8 @@ _CSV_TO_TABLE = {
     "dash_05_course_analytics.csv": "dash_course_analytics",
     "dash_06_activity_heatmap.csv": "dash_activity_heatmap",
     "dash_07_upcoming_events.csv":  "dash_upcoming_events",
+    "dash_08_risk.csv":             "dash_risk",
+    "dash_09_features.csv":         "dash_features",
 }
 
 # Yukleme sonrasi olusturulacak index'ler (backend tum sorgularda WHERE userid = ?)
@@ -54,6 +57,9 @@ _INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_dash_upcoming_events_uid  ON dash_upcoming_events(userid);",
     "CREATE INDEX IF NOT EXISTS idx_dash_daily_sessions_uid   ON dash_daily_sessions(userid);",
     "CREATE INDEX IF NOT EXISTS idx_dash_module_status_uid    ON dash_module_status(userid);",
+    # Risk: backend get_dash_risk WHERE user_id = ?  (NOT: kolon adi user_id)
+    "CREATE INDEX IF NOT EXISTS idx_dash_risk_uid             ON dash_risk(user_id);",
+    "CREATE INDEX IF NOT EXISTS idx_dash_features_uid         ON dash_features(userid);",
     "CREATE INDEX IF NOT EXISTS idx_golden_users_uid          ON golden_users(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_uid      ON student_registry(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_dropout  ON student_registry(dropout_week);",
@@ -161,7 +167,7 @@ def main() -> None:
     if not args.yes:
         onay = _ask_yes_no(
             "Render DB'de bu tablolar SILINIP yeniden yazilacak (REPLACE):\n"
-            "  7 dash tablosu + golden_users + student_registry\n"
+            "  9 dash tablosu (dash_risk + dash_features dahil) + golden_users + student_registry\n"
             "  Devam edilsin mi?"
         )
         if not onay:
