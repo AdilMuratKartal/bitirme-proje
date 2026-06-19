@@ -10,3 +10,18 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
+
+### Node / Frontend
+node_modules/
+dist/
+.firebase/
+.agents/
+.env
+.env.local
+.env.*.local
+
+### Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/

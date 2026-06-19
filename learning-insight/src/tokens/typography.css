@@ -1,0 +1,38 @@
+/* Learning Insight — Typography tokens
+   ================================================================
+   Single-family system. Plus Jakarta Sans for everything;
+   JetBrains Mono only for tabular metric figures (grades, %, IDs).
+   Numerals use tabular-nums so dashboard stats stay aligned. */
+
+:root {
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  /* Type scale (px) */
+  --text-xs:   12px;
+  --text-sm:   14px;
+  --text-base: 16px;   /* body default */
+  --text-md:   18px;
+  --text-lg:   20px;
+  --text-xl:   24px;   /* card titles (app card-head h2 = 1.5rem) */
+  --text-2xl:  30px;
+  --text-3xl:  38px;
+  --text-4xl:  48px;   /* hero metric figures */
+
+  /* Weights */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;   /* card titles in app */
+  --weight-bold:     700;
+  --weight-extra:    800;   /* display / wordmark */
+
+  /* Line heights */
+  --leading-tight:  1.15;   /* display + big numerals */
+  --leading-snug:   1.30;   /* headings */
+  --leading-normal: 1.55;   /* body */
+
+  /* Letter spacing */
+  --tracking-tight:  -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide:   0.08em;   /* eyebrows / overlines */
+}
