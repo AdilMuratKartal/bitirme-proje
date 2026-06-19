@@ -142,7 +142,12 @@ export const apiService = {
 
   // 6. GET /api/student/me/events
   getStudentEvents: async (_uid: string) => {
-    return fetchWithRetry(`/api/student/me/events`, mock.dash_07_upcoming_events);
+    const res = await fetchWithRetry(`/api/student/me/events`, mock.dash_07_upcoming_events);
+    // Backend { items: [...] } döndürüyor, düz diziye aç
+    if (!res.fallback && res.data && Array.isArray((res.data as any).items)) {
+      return { data: (res.data as any).items, fallback: false };
+    }
+    return res; // fallback zaten düz dizi
   },
 
   // 7. GET /api/student/me/basic
