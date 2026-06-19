@@ -3,29 +3,40 @@ render_backend/ServiceLayer/events_service.py — Etkinlikler Sayfası Servisi
 
 get_events(uid, dao, reference_date=None) → EventsResponse
 
-mdl_event tablosu yoktur — etkinlikler:
-  - Quiz: mdl_quiz.timeclose → son gün
-  - Ödev: mdl_assign.duedate → son gün
+dash-only: etkinlikler dash_module_status'taki assign + quiz modüllerinden türetilir
+(dash_upcoming_events boş olduğu için). Son tarih sırası:
+  expected_date (varsa) → completion_time (tamamlandıysa) → first_view_time.
 
-Kategori:
-  past     → timeclose < ref_ts
-  upcoming → ref_ts ≤ timeclose < ref_ts + 7 gün
-  future   → timeclose ≥ ref_ts + 7 gün
+Kategori (ref_ts'e göre): past / upcoming (≤7 gün) / future.
 """
 
 from __future__ import annotations
 
 import time
 from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pandas as pd
 
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from schemas import EventItem, EventsResponse
-from ServiceLayer.common_utils import days_until, format_date_tr
+from ServiceLayer.common_utils import course_label, days_until, format_date_tr
 
 _7_DAYS = 7 * 86_400
+_EVENT_TYPES = {"assign": "assignment", "quiz": "quiz", "workshop": "assignment"}
+
+
+def _date_to_ts(date_val) -> Optional[int]:
+    if date_val is None or (isinstance(date_val, float) and pd.isna(date_val)):
+        return None
+    try:
+        if isinstance(date_val, str):
+            d = datetime.strptime(date_val[:10], "%Y-%m-%d")
+        else:
+            d = datetime(date_val.year, date_val.month, date_val.day)
+        return int(d.replace(tzinfo=timezone.utc).timestamp())
+    except Exception:
+        return None
 
 
 def get_events(
@@ -33,122 +44,63 @@ def get_events(
     dao: MoodleDAO,
     reference_date: Optional[datetime] = None,
 ) -> EventsResponse:
-    """
-    Akış:
-    1. Quiz + ödev etkinliklerini çek.
-    2. Kurs adı haritasını oluştur.
-    3. ref_ts'e göre past/upcoming/future kategorile.
-    4. EventsResponse döndür.
-    """
     ref_ts = (
         int(reference_date.replace(tzinfo=timezone.utc).timestamp())
         if reference_date
         else int(time.time())
     )
-    ref_dt = datetime.fromtimestamp(ref_ts, tz=timezone.utc)
 
-    quiz_df   = dao.get_quiz_events(uid)
-    assign_df = dao.get_assign_events(uid)
-    courses_df = dao.get_courses()
-
-    course_map: Dict[int, str] = {}
-    if not courses_df.empty:
-        for _, row in courses_df.iterrows():
-            course_map[int(row["id"])] = str(row["fullname"])
-
+    mod_df = dao.get_dash_module_status(uid)
     all_items: List[EventItem] = []
 
-    # ── Quiz etkinlikleri ──────────────────────────────────────────
-    if not quiz_df.empty:
-        for _, row in quiz_df.iterrows():
-            due_ts = int(row["timeclose"]) if pd.notna(row.get("timeclose")) else 0
-            if due_ts == 0:
+    if not mod_df.empty:
+        for _, row in mod_df.iterrows():
+            mtype = str(row.get("module_type", "")).strip().lower()
+            if mtype not in _EVENT_TYPES:
                 continue
-            is_submitted = (
-                pd.notna(row.get("state")) and
-                str(row["state"]) in ("finished", "submitted")
-            )
-            all_items.append(_make_event_item(
-                event_id=int(row["id"]),
-                event_type="quiz",
-                course_id=int(row["course"]),
-                title=str(row["name"]),
+
+            due_ts = _date_to_ts(row.get("expected_date"))
+            if due_ts is None and pd.notna(row.get("completion_time")) and row.get("completion_time"):
+                due_ts = int(row["completion_time"])
+            if due_ts is None and pd.notna(row.get("first_view_time")) and row.get("first_view_time"):
+                due_ts = int(row["first_view_time"])
+            if due_ts is None:
+                continue
+
+            cid = int(row["courseid"]) if pd.notna(row.get("courseid")) else 0
+            title = str(row.get("display_name") or "").strip()
+            if not title or title.lower() in ("nombre", "none", "nan"):
+                title = "Ödev" if mtype != "quiz" else "Quiz"
+
+            all_items.append(EventItem(
+                event_id=int(row["cmid"]) if pd.notna(row.get("cmid")) else 0,
+                event_type=_EVENT_TYPES[mtype],
+                course_id=cid,
+                course_name=course_label(cid, None),
+                title=title,
                 due_ts=due_ts,
-                is_submitted=is_submitted,
-                course_map=course_map,
-                ref_ts=ref_ts,
+                due_date_str=format_date_tr(due_ts),
+                is_submitted=bool(row.get("is_completed")),
+                days_until_due=days_until(due_ts, ref_ts),
             ))
 
-    # ── Ödev etkinlikleri ─────────────────────────────────────────
-    if not assign_df.empty:
-        for _, row in assign_df.iterrows():
-            due_ts = int(row["duedate"]) if pd.notna(row.get("duedate")) else 0
-            if due_ts == 0:
-                continue
-            is_submitted = (
-                pd.notna(row.get("status")) and
-                str(row["status"]) in ("submitted", "graded")
-            )
-            all_items.append(_make_event_item(
-                event_id=int(row["id"]),
-                event_type="assignment",
-                course_id=int(row["course"]),
-                title=str(row["name"]),
-                due_ts=due_ts,
-                is_submitted=is_submitted,
-                course_map=course_map,
-                ref_ts=ref_ts,
-            ))
-
-    # ── Kategorize ────────────────────────────────────────────────
-    past_events:     List[EventItem] = []
-    upcoming_events: List[EventItem] = []
-    future_events:   List[EventItem] = []
-
+    past, upcoming, future = [], [], []
     for item in all_items:
         if item.due_ts < ref_ts:
-            past_events.append(item)
+            past.append(item)
         elif item.due_ts < ref_ts + _7_DAYS:
-            upcoming_events.append(item)
+            upcoming.append(item)
         else:
-            future_events.append(item)
+            future.append(item)
 
-    # Sıralama: past → yeniden eskiye; upcoming/future → yakından uzağa
-    past_events.sort(key=lambda x: x.due_ts, reverse=True)
-    upcoming_events.sort(key=lambda x: x.due_ts)
-    future_events.sort(key=lambda x: x.due_ts)
+    past.sort(key=lambda x: x.due_ts, reverse=True)
+    upcoming.sort(key=lambda x: x.due_ts)
+    future.sort(key=lambda x: x.due_ts)
 
     return EventsResponse(
-        past_events=past_events,
-        upcoming_events=upcoming_events,
-        future_events=future_events,
+        past_events=past,
+        upcoming_events=upcoming,
+        future_events=future,
         reference_date_str=format_date_tr(ref_ts),
         user_id=uid,
-    )
-
-
-# ─────────────────────────────────────────────────────────────────
-# Yardımcı: tek EventItem oluştur
-# ─────────────────────────────────────────────────────────────────
-
-def _make_event_item(
-    event_id: int,
-    event_type: str,
-    course_id: int,
-    title: str,
-    due_ts: int,
-    is_submitted: bool,
-    course_map: Dict[int, str],
-    ref_ts: int,
-) -> EventItem:
-    return EventItem(
-        event_id=event_id,
-        event_type=event_type,
-        course_id=course_id,
-        course_name=course_map.get(course_id, f"Kurs {course_id}"),
-        title=title,
-        due_ts=due_ts,
-        due_date_str=format_date_tr(due_ts),
-        is_submitted=is_submitted,
-        days_until_due=days_until(due_ts, ref_ts),
     )

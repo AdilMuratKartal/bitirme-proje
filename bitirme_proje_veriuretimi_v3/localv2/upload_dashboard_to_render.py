@@ -57,6 +57,8 @@ _INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_golden_users_uid          ON golden_users(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_uid      ON student_registry(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_dropout  ON student_registry(dropout_week);",
+    # Auth: firebase_uid -> userid lookup (token dogrulama hot-path)
+    "CREATE UNIQUE INDEX IF NOT EXISTS ux_student_registry_firebase_uid ON student_registry(firebase_uid);",
 ]
 
 
@@ -111,12 +113,30 @@ def _upload(df: pd.DataFrame, table: str, engine) -> int:
     return len(df)
 
 
-def _build_student_registry(golden: pd.DataFrame) -> pd.DataFrame:
-    """golden_1000'den student_registry turet (hepsi aktif, dropout yok)."""
+def _build_student_registry(golden: pd.DataFrame, engine) -> pd.DataFrame:
+    """
+    golden_1000'den student_registry turet (hepsi aktif, dropout yok).
+    KRITIK: Tablo REPLACE edildiginden, mevcut firebase_uid/firebase_email
+    eslemelerini (seed_firebase_users + manuel demo eslemesi) DB'den okuyup
+    userid uzerinden koruruz. Aksi halde her dash yuklemesinde auth eslemesi silinir.
+    """
     reg = golden[["userid"]].copy()
     reg["segment"]      = "GOLDEN"
     reg["is_active"]    = True
     reg["dropout_week"] = pd.Series([pd.NA] * len(reg), dtype="Int64")  # NULL
+
+    try:
+        existing = pd.read_sql(
+            "SELECT userid, firebase_uid, firebase_email FROM student_registry", engine
+        )
+        reg = reg.merge(existing, on="userid", how="left")
+        kept = int(reg["firebase_uid"].notna().sum())
+        print(f"  student_registry: {kept} firebase eslemesi korundu")
+    except Exception as exc:
+        # Tablo henuz yok (ilk yukleme) -> bos kolonlar
+        reg["firebase_uid"] = None
+        reg["firebase_email"] = None
+        print(f"  student_registry: mevcut firebase eslemesi yok ({exc})")
     return reg
 
 
@@ -162,8 +182,8 @@ def main() -> None:
     golden = pd.read_csv(_GOLDEN_CSV)
     total += _upload(golden, "golden_users", engine)
 
-    # 3) student_registry (golden'dan turetilmis)
-    total += _upload(_build_student_registry(golden), "student_registry", engine)
+    # 3) student_registry (golden'dan turetilmis + firebase eslemeleri korunarak)
+    total += _upload(_build_student_registry(golden, engine), "student_registry", engine)
 
     print(_SEP)
     print(f"  Toplam yazilan satir: {total:,}")

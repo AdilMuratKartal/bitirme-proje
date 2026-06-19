@@ -1,8 +1,9 @@
 """
-render_backend/api/api.py — FastAPI Uygulaması
+render_backend/api/api.py — FastAPI Uygulaması (dash-only)
 
-Web Service entrypoint. Sıfır iş mantığı, sıfır SQL, sıfır doğrudan model çağrısı.
-Tüm iş mantığı Orchestration ve ServiceLayer katmanlarına delege edilir.
+Web Service entrypoint. Sıfır iş mantığı, sıfır SQL, sıfır model çağrısı.
+Tüm veriler dash_* precompute tablolarından okunur (mdl_* canlı sorgu YOK).
+Risk değerleri offline hesaplanıp dash_risk tablosuna yazılır; burada yalnızca okunur.
 
 Render startCommand:
     gunicorn api_gateway_orchestration.api.api:app \
@@ -30,8 +31,6 @@ from dependencies import get_dao
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from api_gateway_orchestration.api.gateway import verify_firebase_token
 from api_gateway_orchestration.api.middleware import register_middleware
-from api_gateway_orchestration.orchestration.model_registry import ModelRegistry
-from api_gateway_orchestration.orchestration.orchestration import BatchOrchestrator
 from schemas import (
     CompetenciesResponse,
     CourseAnalyticsResponse,
@@ -52,25 +51,17 @@ from ServiceLayer.course_analytics_service import get_course_analytics
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# ── Singleton'lar (process boyunca bir kez yüklenir) ─────────────
-_models: ModelRegistry | None = None
-_orchestrator: BatchOrchestrator | None = None
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global _models, _orchestrator
-    logger.info("startup: modeller yükleniyor")
-    _models = ModelRegistry.load_all()
-    _orchestrator = BatchOrchestrator(dao=None, models=_models)
-    logger.info("startup: hazır")
+    logger.info("startup: dash-only API hazır (model yüklemesi yok)")
     yield
     logger.info("shutdown: bağlantılar kapatılıyor")
 
 
 app = FastAPI(
     title="Learning-Insight API",
-    version="1.0.0",
+    version="2.0.0",
     lifespan=lifespan,
 )
 
@@ -78,13 +69,6 @@ register_middleware(app)
 
 
 # ── Yardımcı ─────────────────────────────────────────────────────
-
-def _get_orchestrator(dao: MoodleDAO) -> BatchOrchestrator:
-    if _orchestrator is None:
-        raise HTTPException(status_code=503, detail="Servis başlatılıyor")
-    _orchestrator.dao = dao
-    return _orchestrator
-
 
 def get_current_userid(
     token: Annotated[dict, Depends(verify_firebase_token)],
@@ -106,17 +90,51 @@ def get_current_userid(
     return userid
 
 
+def _build_dashboard(userid: int, dao: MoodleDAO) -> dict:
+    """Risk (dash_risk) + temel değerler (dash_user_stats) → dashboard yanıtı."""
+    risk = dao.get_dash_risk(userid)
+    stats = dao.get_dash_user_stats(userid) or {}
+
+    if risk:
+        risk_block = {
+            "risk_score":       risk.get("risk_score"),
+            "risk_level":       risk.get("risk_level"),
+            "pass_probability": risk.get("pass_probability"),
+            "will_pass":        risk.get("will_pass"),
+            "predicted_grade":  risk.get("predicted_grade"),
+        }
+        freshness = "fresh"
+    else:
+        risk_block = {
+            "risk_score": None, "risk_level": None,
+            "pass_probability": None, "will_pass": None, "predicted_grade": None,
+        }
+        freshness = "pending"
+
+    basic_values = {
+        "gpa":              stats.get("avg_grade"),
+        "streak":           stats.get("study_streak_days"),
+        "late_assignments": stats.get("late_assignment_count"),
+        "focus_score":      stats.get("focus_score"),
+    }
+    return {
+        "risk_premodel_analysis": risk_block,
+        "basic_values": basic_values,
+        "freshness": freshness,
+    }
+
+
 # ── Endpoints ────────────────────────────────────────────────────
 
 @app.get("/health")
 async def health(dao: Annotated[MoodleDAO, Depends(get_dao)]):
-    """Render health check. DB ping + model yüklü kontrolü."""
+    """Render health check. DB ping."""
     session = dao._session()
     try:
         session.execute(text("SELECT 1"))
     finally:
         session.close()
-    return {"status": "ok", "models_loaded": _models is not None and _models.loaded}
+    return {"status": "ok", "mode": "dash-only"}
 
 
 @app.get("/api/student/me/home", response_model=HomepageResponse)
@@ -133,12 +151,8 @@ async def get_dashboard(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """
-    Öğrenci özet dashboard'u.
-    FRESH → cache'den (~50ms). STALE/PENDING → on-demand predict (~2-4s).
-    """
-    orch = _get_orchestrator(dao)
-    return orch.get_student_analysis(userid, dao)
+    """Öğrenci özet dashboard'u: risk (dash_risk precompute) + temel değerler (dash_user_stats)."""
+    return _build_dashboard(userid, dao)
 
 
 @app.get("/api/student/me/grades", response_model=GradesPageResponse)
@@ -146,9 +160,8 @@ async def grades(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """Notlar sayfası: devam eden kurslar (risk_premodel + freshness) + biten kurslar (arşiv)."""
-    orch = _get_orchestrator(dao)
-    return get_grades_page(userid, dao, orch)
+    """Notlar sayfası: devam eden + biten kurslar (dash_course_progress + dash_risk)."""
+    return get_grades_page(userid, dao)
 
 
 @app.get("/api/student/me/learning-path", response_model=LearningPathResponse)
@@ -156,7 +169,7 @@ async def learning_path(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """Öğrenme yolu sayfası: son 30 günün aktivite timeline'ı + Chart.js veri seti."""
+    """Öğrenme yolu sayfası: aktivite timeline'ı (dash_module_status) + Chart.js (dash_daily_sessions)."""
     return get_learning_path(userid, dao)
 
 
@@ -165,7 +178,7 @@ async def competencies(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """Yetkinlikler sayfası: 4 tür (OKUMA/FORUM/İZLEME/ÖDEV) log-tabanlı tamamlama oranları."""
+    """Yetkinlikler sayfası: 4 tür (OKUMA/FORUM/İZLEME/ÖDEV) dash_module_status tamamlama oranları."""
     return get_competencies(userid, dao)
 
 
@@ -174,7 +187,7 @@ async def events(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """Etkinlikler sayfası: quiz + ödev deadline'ları (geçmiş/yaklaşan/gelecek)."""
+    """Etkinlikler sayfası: quiz + ödev deadline'ları (dash_module_status)."""
     return get_events(userid, dao)
 
 
@@ -183,8 +196,8 @@ async def get_basic_values(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """GPA, streak, tamamlanan ders sayısı."""
-    values = dao.get_basic_values(userid)
+    """GPA, streak, odak skoru vb. — dash_user_stats'tan."""
+    values = dao.get_dash_user_stats(userid)
     if values is None:
         return JSONResponse(
             {"status": "pending", "message": "Temel değerler henüz hazır değil"},
@@ -207,40 +220,5 @@ async def course_analytics(
     userid: Annotated[int, Depends(get_current_userid)],
     dao: Annotated[MoodleDAO, Depends(get_dao)],
 ):
-    """Kurs analitiği: assign/quiz tamamlama oranları + forum/page metrikleri."""
+    """Kurs analitiği: assign/quiz tamamlama oranları + forum/page metrikleri (dash_course_analytics)."""
     return get_course_analytics(userid, dao)
-
-
-@app.post("/api/batch/run-weekly")
-async def trigger_weekly_batch(
-    dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
-):
-    """
-    Manuel haftalık batch tetikleyici (test/admin).
-    Production'da bu endpoint yerine Cron Job kullanılır.
-    """
-    import asyncio
-    from datetime import datetime, timezone
-
-    orch = _get_orchestrator(dao)
-    week = datetime.now(timezone.utc).isocalendar()[1]
-    asyncio.create_task(asyncio.to_thread(orch.run_weekly_batch, week, dao))
-    return {"status": "started", "week": week}
-
-
-@app.get("/api/batch/status")
-async def batch_status(
-    dao: Annotated[MoodleDAO, Depends(get_dao)],
-    token: Annotated[dict, Depends(verify_firebase_token)],
-):
-    """Son batch durumu — en son computed_at bazlı özet."""
-    session = dao._session()
-    try:
-        result = session.execute(
-            text("SELECT MAX(computed_at) as last_run, COUNT(*) as total_students "
-                 "FROM mdl_mimo_analysis")
-        ).fetchone()
-        return {"last_run": str(result[0]), "total_students": result[1]}
-    finally:
-        session.close()

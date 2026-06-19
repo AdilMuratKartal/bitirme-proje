@@ -3,86 +3,48 @@ render_backend/ServiceLayer/competencies_service.py — Yetkinlikler Sayfası Se
 
 get_competencies(uid, dao) → CompetenciesResponse
 
-4 yetkinlik türü (OKUMA/FORUM/İZLEME/ÖDEV), log-tabanlı tamamlama oranları.
-HKAR önerileri yalnızca predicted_class için kullanılır; liste halinde dönmez.
+4 yetkinlik türü (OKUMA/FORUM/İZLEME/ÖDEV), dash_module_status tabanlı tamamlama oranları.
+mdl_* yerine yalnızca dash precompute tabloları okunur.
 """
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import List, Optional
 
 import pandas as pd
 
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from schemas import CompetenciesResponse, CompetencyItem
-from ServiceLayer.common_utils import label_competency
-
-# content_type sütunuyla eşleşen sabit konfigürasyon
-COMPETENCY_CONFIG: Dict[str, List[str]] = {
-    "OKUMA":  ["Okuma"],
-    "FORUM":  ["Forum"],
-    "İZLEME": ["Izleme"],
-    "ÖDEV":   ["Odev"],
-}
+from ServiceLayer.common_utils import COMPETENCY_MODULE_TYPES, label_competency
 
 
 def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
     """
-    Akış:
-    1. Tüm kurs modüllerini content_type'a göre grupla → total aktivite sayısı.
-    2. Öğrencinin tüm loglarını çek.
-    3. HKRT analiz sonucunu çek → predicted_class.
-    4. Her COMPETENCY_CONFIG tipi için tamamlama oranını hesapla.
-    5. CompetenciesResponse döndür.
+    Akış (dash-only):
+    1. dash_module_status'tan öğrencinin tüm modüllerini çek.
+    2. Her yetkinlik türü için (module_type eşlemesi) total + completed say.
+    3. percentage = completed / total * 100.
+    4. CompetenciesResponse döndür.
     """
-    modules_df = dao.get_course_modules_all()
-    logs_df    = dao.get_activity_logs_recent(uid, since_ts=0)
-    hkrt_rows  = dao.get_hkrt_analysis(uid)
+    mod_df = dao.get_dash_module_status(uid)
 
-    # predicted_class — HKRT analizi varsa ilk satırdan (tabloda saklanmıyor,
-    # sadece mdl_hkrt_analysis'de bulunmuyor — orchestration sonucunda predict() verir).
-    # Burada DB'den get_hkrt_analysis varsa predicted_class yok;
-    # predicted_class bilgisi mdl_mimo_analysis.model_confidence yerine HKRT predict_class
-    # olacak. Mevcut tabloda yok → None döner, frontend bunu handle eder.
-    predicted_class: Optional[str] = None
-    # mdl_hkrt_analysis tablosunda predicted_class sütunu yok.
-    # İlerleyen sprint'te eklenebilir. Şimdilik None.
-
-    # Log'lardan görüntülenen objectid seti
-    viewed_ids: set[int] = set()
-    if not logs_df.empty:
-        view_logs = logs_df[logs_df["action"].isin(["view", "viewed", "submitted", "completed"])]
-        viewed_ids = set(
-            int(x) for x in view_logs["objectid"].dropna().tolist()
-        )
+    if not mod_df.empty:
+        mod_df = mod_df.copy()
+        mod_df["module_type"] = mod_df["module_type"].astype(str).str.strip().str.lower()
+        mod_df["is_completed"] = mod_df["is_completed"].fillna(False).astype(bool)
 
     competencies: List[CompetencyItem] = []
     total_pct = 0.0
 
-    for ctype_label, content_types in COMPETENCY_CONFIG.items():
-        # Bu türe ait modüller
-        if not modules_df.empty:
-            type_mods = modules_df[modules_df["content_type"].isin(content_types)]
+    for ctype_label, module_types in COMPETENCY_MODULE_TYPES.items():
+        if mod_df.empty:
+            type_rows = pd.DataFrame()
         else:
-            type_mods = pd.DataFrame()
+            type_rows = mod_df[mod_df["module_type"].isin(module_types)]
 
-        total = len(type_mods)
-        if total == 0:
-            # Bu tür için modül yoksa %0
-            label, explanation = label_competency(0.0, ctype_label, 0, 0)
-            competencies.append(CompetencyItem(
-                type=ctype_label,
-                total_activities=0,
-                completed=0,
-                percentage=0.0,
-                label=label,
-                explanation_text=explanation,
-            ))
-            continue
-
-        mod_ids = set(int(x) for x in type_mods["id"].tolist())
-        completed = len(mod_ids & viewed_ids)
-        pct = round(completed / total * 100, 1)
+        total = int(len(type_rows))
+        completed = int(type_rows["is_completed"].sum()) if total else 0
+        pct = round(completed / total * 100, 1) if total else 0.0
         total_pct += pct
 
         label, explanation = label_competency(pct, ctype_label, total, completed)
@@ -95,7 +57,10 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
             explanation_text=explanation,
         ))
 
-    overall = round(total_pct / len(COMPETENCY_CONFIG), 1) if competencies else 0.0
+    overall = round(total_pct / len(COMPETENCY_MODULE_TYPES), 1) if competencies else 0.0
+
+    # predicted_class: risk precompute tablosundan (varsa); yoksa None.
+    predicted_class: Optional[str] = _predicted_class(uid, dao)
 
     return CompetenciesResponse(
         competencies=competencies,
@@ -103,3 +68,20 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
         overall_completion=overall,
         user_id=uid,
     )
+
+
+def _predicted_class(uid: int, dao: MoodleDAO) -> Optional[str]:
+    """Risk precompute varsa 'Başarılı'/'Başarısız' döner; yoksa None."""
+    getter = getattr(dao, "get_dash_risk", None)
+    if getter is None:
+        return None
+    try:
+        risk = getter(uid)
+    except Exception:
+        return None
+    if not risk:
+        return None
+    will_pass = risk.get("will_pass")
+    if will_pass is None:
+        return None
+    return "Başarılı" if will_pass else "Başarısız"

@@ -3,205 +3,82 @@ render_backend/ServiceLayer/homepage_service.py — Ana Sayfa Özet Servisi
 
 get_homepage(uid, dao) → HomepageResponse
 
-Tek endpoint'te toplanmış özet kart verisi:
-  - Kullanıcı adı (mdl_user)
-  - 4 yetkinlik yüzdesi (log-tabanlı, competencies_service ile aynı mantık)
-  - Aktif 6 kurs + mevcut notları
-  - Son 6 not (timemodified DESC)
-  - Yaklaşan quiz + ödev adları
-  - Son 30 günün aktivite adları (benzersiz, max 20)
+dash-only: tüm veriler dash precompute tablolarından gelir.
+  - KPI'lar       → dash_user_stats
+  - Kurslar/not   → dash_course_progress
+  - Yetkinlik %   → dash_module_status (competencies ile aynı eşleme)
+  - Yaklaşan/etkinlik + aktivite → dash_module_status
 """
 
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional, Tuple
+from datetime import datetime, timezone
+from typing import Dict, List
 
 import pandas as pd
 
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from schemas import HomepageCourse, HomepageEvent, HomepageGrade, HomepageResponse
-from ServiceLayer.common_utils import format_date_short, format_date_tr
+from ServiceLayer.common_utils import (
+    COMPETENCY_MODULE_TYPES,
+    course_label,
+    format_date_short,
+    format_date_tr,
+)
 
-# ─── Sabitler ────────────────────────────────────────────────────
-
-_COMP_MAP: Dict[str, List[str]] = {
-    "OKUMA":  ["Okuma"],
-    "FORUM":  ["Forum"],
-    "İZLEME": ["Izleme"],
-    "ÖDEV":   ["Odev"],
+# dash_module_status.module_type → kısa Türkçe etiket (aktivite isimleri için)
+_MODULE_TR: Dict[str, str] = {
+    "resource": "Kaynak", "assign": "Ödev", "quiz": "Quiz", "forum": "Forum",
+    "page": "Sayfa", "url": "Bağlantı", "book": "Kitap", "folder": "Klasör",
+    "label": "Etiket", "scorm": "İçerik", "lesson": "Ders", "wiki": "Wiki",
+    "glossary": "Sözlük", "choice": "Anket", "questionnaire": "Anket",
+    "workshop": "Atölye", "bigbluebuttonbn": "Canlı Ders", "chat": "Sohbet",
 }
+_EVENT_TYPES = {"assign": "assignment", "quiz": "quiz", "workshop": "assignment"}
 
-_COMPONENT_LABELS: Dict[str, str] = {
-    "mod_quiz":        "Quiz",
-    "mod_assign":      "Ödev",
-    "mod_forum":       "Forum",
-    "mod_resource":    "Kaynak",
-    "mod_page":        "Sayfa",
-    "mod_url":         "Bağlantı",
-    "mod_videotime":   "Video",
-    "mod_hvp":         "İnteraktif",
-    "mod_lesson":      "Ders",
-    "mod_book":        "Kitap",
-    "mod_folder":      "Klasör",
-    "mod_workshop":    "Atölye",
-    "mod_glossary":    "Sözlük",
-    "mod_survey":      "Anket",
-    "mod_bigbluebuttonbn": "Canlı Ders",
-}
-
-# ─── Yardımcı fonksiyonlar ───────────────────────────────────────
-
-def _calc_competency_pcts(modules_df: pd.DataFrame, logs_df: pd.DataFrame) -> Dict[str, float]:
-    """4 yetkinlik türü için tamamlama yüzdesi hesapla."""
-    viewed_ids: set = set()
-    if not logs_df.empty:
-        vl = logs_df[logs_df["action"].isin(["view", "viewed", "submitted", "completed"])]
-        viewed_ids = {int(x) for x in vl["objectid"].dropna()}
-
-    result: Dict[str, float] = {}
-    for label, ctypes in _COMP_MAP.items():
-        if modules_df.empty:
-            result[label] = 0.0
-            continue
-        mods = modules_df[modules_df["content_type"].isin(ctypes)]
-        total = len(mods)
-        if total == 0:
-            result[label] = 0.0
-        else:
-            done = len({int(x) for x in mods["id"]} & viewed_ids)
-            result[label] = round(done / total * 100, 1)
-    return result
-
-
-def _component_names(logs_30d: pd.DataFrame) -> List[str]:
-    """Son 30 günlük benzersiz aktivite adları, max 20."""
-    if logs_30d.empty:
-        return []
-    seen, names = set(), []
-    for comp in logs_30d["component"]:
-        label = _COMPONENT_LABELS.get(comp, comp.replace("mod_", "").capitalize())
-        if label not in seen:
-            seen.add(label)
-            names.append(label)
-        if len(names) >= 20:
-            break
-    return names
-
-
-def _upcoming_events(
-    quiz_df: pd.DataFrame,
-    assign_df: pd.DataFrame,
-    now_ts: int,
-) -> List[HomepageEvent]:
-    """Yaklaşan quiz + ödev adlarını due_ts'e göre sıralı döner."""
-    items: List[Tuple[int, HomepageEvent]] = []
-
-    if not quiz_df.empty:
-        future_q = quiz_df[quiz_df["timeclose"] > now_ts]
-        for _, q in future_q.iterrows():
-            due = int(q["timeclose"])
-            items.append((due, HomepageEvent(
-                title=str(q["name"]),
-                event_type="quiz",
-                due_date_str=format_date_tr(due),
-            )))
-
-    if not assign_df.empty:
-        valid_a = assign_df[assign_df["duedate"].notna() & (assign_df["duedate"] > now_ts)]
-        for _, a in valid_a.iterrows():
-            due = int(a["duedate"])
-            items.append((due, HomepageEvent(
-                title=str(a["name"]),
-                event_type="assignment",
-                due_date_str=format_date_tr(due),
-            )))
-
-    items.sort(key=lambda x: x[0])
-    return [ev for _, ev in items]
-
-
-# ─── Ana fonksiyon ───────────────────────────────────────────────
 
 def get_homepage(uid: int, dao: MoodleDAO) -> HomepageResponse:
-    """
-    Ana sayfa özet kartı.
-    6 DAO çağrısı; log verisi iki amaç için reuse edilir (ekstra sorgu yok).
-    """
-    now_ts    = int(time.time())
-    since_30d = now_ts - 30 * 86_400
+    now_ts = int(time.time())
 
-    # 1. Kullanıcı adı
-    user      = dao.get_user(uid)
-    user_name = (
-        f"{user['firstname']} {user['lastname']}" if user else f"Öğrenci {uid}"
-    )
-
-    # 2. Kurslar + notlar (tek çekimde iki ihtiyaç)
-    courses_df = dao.get_courses()
-    grades_df  = dao.get_student_grade_details(uid)
-
-    # 2a. Aktif kurslar (enddate=0 veya >now), max 6
-    if not courses_df.empty:
-        active_c = courses_df[
-            (courses_df["enddate"] == 0) | (courses_df["enddate"] > now_ts)
-        ].head(6)
-    else:
-        active_c = pd.DataFrame()
-
-    active_courses: List[HomepageCourse] = []
-    for _, c in active_c.iterrows():
-        c_id = int(c["id"])
-        if not grades_df.empty:
-            cg = grades_df[
-                (grades_df["courseid"] == c_id) & (grades_df["itemtype"] == "course")
-            ]["finalgrade"]
-            current_grade = round(float(cg.mean()), 1) if not cg.empty else None
-        else:
-            current_grade = None
-        active_courses.append(HomepageCourse(
-            course_id=c_id,
-            course_name=str(c["fullname"]),
-            current_grade=current_grade,
-        ))
-
-    # 2b. Son 6 not (timemodified DESC, finalgrade dolu olanlar)
-    if not grades_df.empty:
-        recent_g = (
-            grades_df[grades_df["finalgrade"].notna()]
-            .sort_values("timemodified", ascending=False)
-            .head(6)
-        )
-    else:
-        recent_g = pd.DataFrame()
-
-    recent_grades: List[HomepageGrade] = []
-    for _, row in recent_g.iterrows():
-        item_name = row.get("itemname") or str(row["itemtype"])
-        recent_grades.append(HomepageGrade(
-            item_name=str(item_name),
-            grade=round(float(row["finalgrade"]), 1),
-            date_str=format_date_short(int(row["timemodified"])),
-        ))
-
-    # 3. Log — yetkinlik % için tüm zamanlar, aktivite isimleri için 30 gün
-    logs_all = dao.get_activity_logs_recent(uid, since_ts=0)
-    logs_30d = logs_all[logs_all["timecreated"] >= since_30d] if not logs_all.empty else logs_all
-
-    # 3a. Yetkinlik %
-    modules_df      = dao.get_course_modules_all()
-    competency_pcts = _calc_competency_pcts(modules_df, logs_all)
-
-    # 3b. Aktivite isimleri (30 gün)
-    recent_activities = _component_names(logs_30d)
-
-    # 4. Etkinlik isimleri (takvim) — yaklaşan
-    quiz_df   = dao.get_quiz_events(uid)
-    assign_df = dao.get_assign_events(uid)
-    upcoming_events = _upcoming_events(quiz_df, assign_df, now_ts)
-
-    # 5. KPI kartları — dash_02_user_stats (pre-compute yoksa hepsi None)
     stats = dao.get_dash_user_stats(uid)
+    progress_df = dao.get_dash_course_progress(uid)
+    mod_df = dao.get_dash_module_status(uid)
+
+    # 1. Kullanıcı adı — anonim sette isim yok → placeholder
+    user_name = f"Öğrenci {uid}"
+
+    # 2. Yetkinlik yüzdeleri (competencies ile aynı eşleme)
+    competency_pcts = _competency_pcts(mod_df)
+
+    # 3. Aktif kurslar (max 6) + güncel not
+    active_courses: List[HomepageCourse] = []
+    recent_grades: List[HomepageGrade] = []
+    if not progress_df.empty:
+        for _, c in progress_df.head(6).iterrows():
+            cid = int(c["courseid"])
+            grade = float(c["avg_grade"]) if pd.notna(c.get("avg_grade")) else None
+            active_courses.append(HomepageCourse(
+                course_id=cid,
+                course_name=course_label(cid, c.get("course_fullname")),
+                current_grade=grade,
+            ))
+        # Son notlar: avg_grade'i olan kurslar (kurs-bazlı not)
+        graded = progress_df[progress_df["avg_grade"].notna()]
+        for _, c in graded.head(6).iterrows():
+            cid = int(c["courseid"])
+            date_str = _date_str(c.get("last_activity_date"))
+            recent_grades.append(HomepageGrade(
+                item_name=course_label(cid, c.get("course_fullname")),
+                grade=round(float(c["avg_grade"]), 1),
+                date_str=date_str,
+            ))
+
+    # 4. Yaklaşan etkinlikler + 5. son aktiviteler (dash_module_status)
+    upcoming_events = _upcoming(mod_df, now_ts)
+    recent_activities = _recent_activities(mod_df)
+
+    # 6. KPI kartları
     kpi: dict = {}
     if stats:
         kpi = {
@@ -230,3 +107,71 @@ def get_homepage(uid: int, dao: MoodleDAO) -> HomepageResponse:
         user_id=uid,
         **kpi,
     )
+
+
+def _competency_pcts(mod_df: pd.DataFrame) -> Dict[str, float]:
+    if mod_df.empty:
+        return {k: 0.0 for k in COMPETENCY_MODULE_TYPES}
+    df = mod_df.copy()
+    df["module_type"] = df["module_type"].astype(str).str.strip().str.lower()
+    df["is_completed"] = df["is_completed"].fillna(False).astype(bool)
+    out: Dict[str, float] = {}
+    for label, types in COMPETENCY_MODULE_TYPES.items():
+        rows = df[df["module_type"].isin(types)]
+        total = len(rows)
+        out[label] = round(int(rows["is_completed"].sum()) / total * 100, 1) if total else 0.0
+    return out
+
+
+def _upcoming(mod_df: pd.DataFrame, now_ts: int) -> List[HomepageEvent]:
+    if mod_df.empty:
+        return []
+    items = []
+    for _, row in mod_df.iterrows():
+        mtype = str(row.get("module_type", "")).strip().lower()
+        if mtype not in _EVENT_TYPES:
+            continue
+        ts_val = row.get("completion_time") or row.get("first_view_time")
+        if pd.isna(ts_val) or not ts_val:
+            continue
+        due = int(ts_val)
+        if due < now_ts:
+            continue
+        title = str(row.get("display_name") or "").strip()
+        if not title or title.lower() in ("nombre", "none", "nan"):
+            title = "Ödev" if mtype != "quiz" else "Quiz"
+        items.append((due, HomepageEvent(
+            title=title,
+            event_type=_EVENT_TYPES[mtype],
+            due_date_str=format_date_tr(due),
+        )))
+    items.sort(key=lambda x: x[0])
+    return [ev for _, ev in items[:8]]
+
+
+def _recent_activities(mod_df: pd.DataFrame) -> List[str]:
+    if mod_df.empty:
+        return []
+    df = mod_df.copy()
+    df["ts"] = df["completion_time"].fillna(df["first_view_time"])
+    df = df[df["ts"].notna()].sort_values("ts", ascending=False)
+    seen, names = set(), []
+    for mt in df["module_type"]:
+        label = _MODULE_TR.get(str(mt).strip().lower(), str(mt).capitalize())
+        if label not in seen:
+            seen.add(label)
+            names.append(label)
+        if len(names) >= 20:
+            break
+    return names
+
+
+def _date_str(date_val) -> str:
+    if not date_val:
+        return "—"
+    try:
+        d = datetime.strptime(str(date_val)[:10], "%Y-%m-%d")
+        ts = int(d.replace(tzinfo=timezone.utc).timestamp())
+        return format_date_short(ts)
+    except Exception:
+        return "—"

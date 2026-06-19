@@ -29,6 +29,46 @@ CHART_COLORS: dict[str, str] = {
     "other":      "#4BACC6",
 }
 
+# ─────────────────────────────────────────────────────────────────
+# dash_* tabanlı eşlemeler (mdl_* yerine dash_module_status.module_type)
+# ─────────────────────────────────────────────────────────────────
+
+# 4 yetkinlik türü → dash_module_status.module_type değerleri
+COMPETENCY_MODULE_TYPES: dict[str, list[str]] = {
+    "OKUMA":  ["resource", "page", "book", "url", "folder", "label",
+              "glossary", "wiki", "imscp", "data"],
+    "FORUM":  ["forum", "oublog", "chat"],
+    "İZLEME": ["scorm", "bigbluebuttonbn", "lesson", "pcast",
+              "nanogong", "choice", "questionnaire"],
+    "ÖDEV":   ["assign", "quiz", "workshop"],
+}
+
+# dash_module_status.module_type → timeline/learning-path event_type
+MODULE_TYPE_TO_EVENT: dict[str, str] = {
+    "assign": "assignment", "quiz": "quiz", "workshop": "assignment",
+    "forum": "forum", "oublog": "forum", "chat": "forum",
+    "scorm": "video", "bigbluebuttonbn": "video", "lesson": "video",
+    "pcast": "video", "nanogong": "video",
+    "resource": "module", "page": "module", "book": "module",
+    "url": "module", "folder": "module", "label": "module",
+    "glossary": "module", "wiki": "module", "imscp": "module", "data": "module",
+}
+
+
+def course_label(courseid: int, name: Optional[str]) -> str:
+    """
+    Anonim veri setinde kurs adları placeholder ('nombre') olabilir.
+    Anlamlı ad yoksa "Kurs {id}" döner.
+    """
+    if name and str(name).strip().lower() not in ("", "nombre", "none", "nan"):
+        return str(name).strip()
+    return f"Kurs {courseid}"
+
+
+def event_type_for_module(module_type: str) -> str:
+    """dash_module_status.module_type → event_type string."""
+    return MODULE_TYPE_TO_EVENT.get(str(module_type).strip().lower(), "other")
+
 
 # ─────────────────────────────────────────────────────────────────
 # Tarih formatı
