@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "default": "learning-insight",
+    "for-hosting": "learning-insight"
+  },
+  "targets": {},
+  "etags": {}
+}

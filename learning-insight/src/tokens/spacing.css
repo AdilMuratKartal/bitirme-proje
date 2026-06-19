@@ -1,0 +1,39 @@
+/* Learning Insight — Spacing, radius & layout tokens
+   ================================================================
+   The production app mixed px, rem and vw spacing ad-hoc
+   (gap:20px, padding:15px, margin:1vw, width:80vw...).
+   This is the harmonised 4px-based scale that replaces it. */
+
+:root {
+  /* Spacing scale (4px base) */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;   /* app dashboard grid gap */
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* Radius */
+  --radius-xs:     4px;
+  --radius-sm:     6px;
+  --radius-md:     12px;   /* cards (app .card) */
+  --radius-lg:     16px;   /* large panels, course tags */
+  --radius-pill:   999px;
+  --radius-circle: 50%;
+
+  /* Layout */
+  --sidebar-width-collapsed: 83px;   /* app stdDrawerWidth */
+  --sidebar-width-expanded:  250px;  /* app expandedDrawerWidth */
+  --header-height:           64px;
+  --content-max:             1280px;
+  --gutter:                  var(--space-5);
+
+  /* Borders */
+  --border-width: 1px;
+}

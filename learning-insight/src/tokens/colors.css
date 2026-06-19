@@ -1,0 +1,100 @@
+/* Learning Insight — Color tokens
+   ================================================================
+   Extracted and harmonised from the production app
+   (Header.css :root, HomePage palettes, MUI theme usage).
+   Base ramps first, semantic aliases at the bottom. */
+
+:root {
+  /* ---------- Brand (from the Learning Insight logo wordmark) ---------- */
+  --brand-navy-deep: #134A85;   /* darkest "BU" stroke */
+  --brand-navy:      #1B5FA8;   /* logo "BU" blue */
+  --brand-sky:       #74BBE3;   /* logo "Learn" blue */
+  --brand-sky-soft:  #A9D5EF;
+
+  /* ---------- Primary blue ramp (app --primary-color #007bff) ---------- */
+  --blue-50:  #E6F1FF;
+  --blue-100: #CCE3FF;
+  --blue-200: #99C7FF;
+  --blue-300: #66AAFF;
+  --blue-400: #338EFF;
+  --blue-500: #007BFF;   /* primary action — the app's --primary-color */
+  --blue-600: #0062CC;   /* hover */
+  --blue-700: #004A99;   /* active */
+  --blue-800: #003166;
+  --blue-900: #001933;
+
+  /* ---------- Neutral ramp (charcoal nav + greys) ---------- */
+  --neutral-0:   #FFFFFF;   /* card surface */
+  --neutral-50:  #F7F8F9;
+  --neutral-100: #F4F4F4;   /* page background (app --body-color) */
+  --neutral-200: #E6E8EB;
+  --neutral-300: #DDDDDD;   /* border (app --border-color) */
+  --neutral-400: #C2C5CA;
+  --neutral-500: #949599;   /* disabled / muted icon */
+  --neutral-600: #6C757D;   /* secondary text (app --secondary-color) */
+  --neutral-700: #4A4A4A;
+  --neutral-800: #332D2D;   /* nav / sidebar surface (app --navbar-bg) */
+  --neutral-900: #222222;   /* primary text (app --text-color) */
+  --neutral-950: #0D0D0D;   /* dark-mode page bg */
+
+  /* ---------- Gold accent (app dark-mode --primary-color, achievements) ---------- */
+  --gold-300: #E3C18A;
+  --gold-400: #D9A85C;
+  --gold-500: #C28D41;   /* certificates, badges, highlights */
+  --gold-600: #A2722F;
+
+  /* ---------- Categorical / data-viz palette ----------
+     Reconciled from the course-card + bar-chart + doughnut sets.
+     Use in this order for series, charts, course tags. */
+  --cat-green:   #2E845D;
+  --cat-emerald: #30A66A;
+  --cat-sky:     #069CDB;
+  --cat-blue:    #488EC5;
+  --cat-orange:  #F89120;
+  --cat-amber:   #FCB72A;
+  --cat-red:     #C84954;
+  --cat-crimson: #BF1E2E;
+  --cat-purple:  #963D97;
+  --cat-brown:   #764B28;
+  --cat-gray:    #949599;
+
+  /* ---------- Semantic status ---------- */
+  --success:    #2E845D;
+  --success-bg: #E4F3EC;
+  --warning:    #F89120;
+  --warning-bg: #FEF0DD;
+  --danger:     #DC4C64;   /* app notification badge rgb(220,76,100) */
+  --danger-bg:  #FBE4E8;
+  --info:       #007BFF;
+  --info-bg:    #E6F1FF;
+
+  /* ================= SEMANTIC ALIASES ================= */
+  /* Surfaces */
+  --surface-page:    var(--neutral-100);
+  --surface-card:    var(--neutral-0);
+  --surface-sunken:  var(--neutral-50);
+  --surface-nav:     var(--neutral-800);
+  --surface-overlay: rgba(13, 13, 13, 0.55);
+
+  /* Borders */
+  --border-subtle:  var(--neutral-200);
+  --border-default: var(--neutral-300);
+  --border-strong:  var(--neutral-400);
+
+  /* Text */
+  --text-primary:      var(--neutral-900);
+  --text-secondary:    var(--neutral-600);
+  --text-disabled:     var(--neutral-500);
+  --text-on-nav:       #ECF0F1;
+  --text-on-nav-muted: rgba(255, 255, 255, 0.55);
+  --text-on-primary:   #FFFFFF;
+  --text-link:         var(--blue-500);
+
+  /* Interactive */
+  --primary:        var(--blue-500);
+  --primary-hover:  var(--blue-600);
+  --primary-active: var(--blue-700);
+  --primary-soft:   var(--blue-50);
+  --accent:         var(--gold-500);
+  --focus-ring:     rgba(0, 123, 255, 0.40);
+}
