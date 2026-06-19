@@ -91,10 +91,17 @@ class CompetencyItem(BaseModel):
     explanation_text: str
 
 
+class CourseCompletionItem(BaseModel):
+    course: str
+    completed: int
+    total: int
+
+
 class CompetenciesResponse(BaseModel):
     competencies: List[CompetencyItem]   # sabit 4 eleman
     predicted_class: Optional[str]       # risk_premodel: "Başarılı" / "Başarısız"
     overall_completion: float            # ortalama %
+    completion_by_course: Optional[List[CourseCompletionItem]] = None
     user_id: int
 
 

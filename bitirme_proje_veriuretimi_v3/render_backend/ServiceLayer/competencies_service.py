@@ -14,8 +14,8 @@ from typing import List, Optional
 import pandas as pd
 
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
-from schemas import CompetenciesResponse, CompetencyItem
-from ServiceLayer.common_utils import COMPETENCY_MODULE_TYPES, label_competency
+from schemas import CompetenciesResponse, CompetencyItem, CourseCompletionItem
+from ServiceLayer.common_utils import COMPETENCY_MODULE_TYPES, label_competency, course_label
 
 
 def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
@@ -59,6 +59,21 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
 
     overall = round(total_pct / len(COMPETENCY_MODULE_TYPES), 1) if competencies else 0.0
 
+    # 5. Kurs bazlı tamamlanan etkinlikler
+    progress_df = dao.get_dash_course_progress(uid)
+    completion_by_course: List[CourseCompletionItem] = []
+    if not progress_df.empty:
+        for _, row in progress_df.iterrows():
+            cid = int(row["courseid"])
+            cname = course_label(cid, row.get("course_fullname"))
+            completed = int(row["completed_modules"]) if pd.notna(row.get("completed_modules")) else 0
+            total = int(row["total_visible_modules"]) if pd.notna(row.get("total_visible_modules")) else 0
+            completion_by_course.append(CourseCompletionItem(
+                course=cname,
+                completed=completed,
+                total=total
+            ))
+
     # predicted_class: risk precompute tablosundan (varsa); yoksa None.
     predicted_class: Optional[str] = _predicted_class(uid, dao)
 
@@ -66,6 +81,7 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
         competencies=competencies,
         predicted_class=predicted_class,
         overall_completion=overall,
+        completion_by_course=completion_by_course,
         user_id=uid,
     )
 

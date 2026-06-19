@@ -108,6 +108,7 @@ def _build_chart(sess_df: pd.DataFrame, days: int):
     labels = [format_date_short(int(t)) for t in by_day["ts"]]
     sessions_series = [float(x) for x in by_day["session_count"]]
     pageview_series = [float(x) for x in by_day["page_views"]]
+    minutes_series = [float(x) for x in by_day["total_minutes"]]
 
     datasets = [
         ChartjsSeries(
@@ -121,6 +122,12 @@ def _build_chart(sess_df: pd.DataFrame, days: int):
             data=pageview_series,
             borderColor=CHART_COLORS["quiz"],
             backgroundColor=CHART_COLORS["quiz"] + "33",
+        ),
+        ChartjsSeries(
+            label="Süre",
+            data=minutes_series,
+            borderColor=CHART_COLORS["assignment"],
+            backgroundColor=CHART_COLORS["assignment"] + "33",
         ),
     ]
     return labels, datasets
