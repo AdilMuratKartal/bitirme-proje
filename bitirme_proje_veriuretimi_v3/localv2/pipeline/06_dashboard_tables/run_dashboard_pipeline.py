@@ -34,6 +34,7 @@ STEPS = [
     ("06", os.path.join(THIS_DIR,   "06_compute_activity_heatmap.py"),"Aktivite heatmap (gun x saat)"),
     ("07", os.path.join(THIS_DIR,   "07_compute_upcoming_events.py"), "Upcoming events (per-user deadline tablosu)"),
     ("08", os.path.join(THIS_DIR,   "08_compute_risk.py"),            "Risk tahmini (dash_risk + dash_features, 03'e bagimli)"),
+    ("09", os.path.join(THIS_DIR,   "09_compute_grade_items.py"),     "Item-seviyesi notlar (grade_grades + gecti/gecmedi)"),
 ]
 
 def run_step(label, script_path, description):

@@ -110,6 +110,7 @@ export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
                 <th className="ta-r">Ağırlık</th>
                 <th className="ta-r">Not</th>
                 <th className="ta-c">Harf</th>
+                <th className="ta-c">Durum</th>
                 <th>Dağılım</th>
                 <th>Tarih</th>
               </tr>
@@ -124,7 +125,7 @@ export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
                       {TYPE_LABEL[g.type] || g.type}
                     </Tag>
                   </td>
-                  <td className="ta-r li-num li-table__muted">%{g.weight}</td>
+                  <td className="ta-r li-num li-table__muted">{g.weight != null ? `%${g.weight}` : '—'}</td>
                   <td className="ta-r li-num li-table__grade">
                     {g.grade}
                     <span className="li-table__max">/{g.max}</span>
@@ -137,6 +138,15 @@ export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
                     >
                       {letterFor(g.grade)}
                     </Tag>
+                  </td>
+                  <td className="ta-c">
+                    {g.passed === true ? (
+                      <Tag tone="green" variant="soft" size="sm">Geçti</Tag>
+                    ) : g.passed === false ? (
+                      <Tag tone="red" variant="soft" size="sm">Kaldı</Tag>
+                    ) : (
+                      <span className="li-table__muted">—</span>
+                    )}
                   </td>
                   <td>
                     <div className="li-table__bar">

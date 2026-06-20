@@ -46,6 +46,7 @@ _CSV_TO_TABLE = {
     "dash_07_upcoming_events.csv":  "dash_upcoming_events",
     "dash_08_risk.csv":             "dash_risk",
     "dash_09_features.csv":         "dash_features",
+    "dash_09_grade_items.csv":      "dash_grade_items",
 }
 
 # Yukleme sonrasi olusturulacak index'ler (backend tum sorgularda WHERE userid = ?)
@@ -60,6 +61,7 @@ _INDEXES = [
     # Risk: backend get_dash_risk WHERE user_id = ?  (NOT: kolon adi user_id)
     "CREATE INDEX IF NOT EXISTS idx_dash_risk_uid             ON dash_risk(user_id);",
     "CREATE INDEX IF NOT EXISTS idx_dash_features_uid         ON dash_features(userid);",
+    "CREATE INDEX IF NOT EXISTS idx_dash_grade_items_uid      ON dash_grade_items(userid);",
     "CREATE INDEX IF NOT EXISTS idx_golden_users_uid          ON golden_users(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_uid      ON student_registry(userid);",
     "CREATE INDEX IF NOT EXISTS idx_student_registry_dropout  ON student_registry(dropout_week);",

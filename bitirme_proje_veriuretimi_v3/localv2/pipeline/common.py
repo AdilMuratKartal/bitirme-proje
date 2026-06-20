@@ -22,6 +22,11 @@ import pandas as pd
 # (Veri tasinabildigi icin var olan ilk dizin otomatik secilir.)
 _CANDIDATE_DATA_DIRS = [
     os.environ.get("ANON_DATA_DIR"),
+    # Proje ici kanonik anon veri (BASLIKLI anon_mdl_*.csv) — once bu denenir.
+    os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+        "data", "raw_datas", "anonim-data",
+    ),
     r"C:\Users\2025\Desktop\proje-veri-seçimi-araştırma\proje-için-toplanılan-veriler\anonim-data",
     r"C:\Users\2025\Documents\ML-Project\anonim-data",
 ]

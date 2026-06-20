@@ -154,6 +154,24 @@ class SelectMixin:
         finally:
             session.close()
 
+    def get_dash_grade_items(self, userid: int) -> pd.DataFrame:
+        """dash_grade_items: öğrencinin tek tek (ödev/quiz/manuel/kategori) notları + geçti/geçmedi."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT userid, courseid, course_fullname, itemid, item_label, "
+                     "item_type, item_module, grade, grademax, norm_grade, "
+                     "gradepass, norm_gradepass, passed, graded_date "
+                     "FROM dash_grade_items WHERE userid = :uid "
+                     "ORDER BY courseid, itemid"),
+                session.bind,
+                params={"uid": userid},
+            )
+        except Exception:
+            return pd.DataFrame()
+        finally:
+            session.close()
+
     def get_dash_risk(self, userid: int) -> Optional[Dict]:
         """
         Öğrencinin precompute edilmiş risk sonucunu dash_risk tablosundan döner.

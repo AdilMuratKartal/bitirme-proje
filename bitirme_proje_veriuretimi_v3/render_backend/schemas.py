@@ -43,9 +43,26 @@ class CompletedCourseDetail(BaseModel):
     risk_score: Optional[float]
 
 
+class GradeItemDetail(BaseModel):
+    courseid: int
+    course_fullname: str
+    itemid: int
+    item_label: str                       # "Quiz"/"Ödev"/"Kurs Genel Notu" vb. (anon itemname yerine)
+    item_type: str                        # course / mod / manual / category
+    item_module: Optional[str] = None     # assign / quiz / ... (mod ise)
+    grade: Optional[float] = None         # ham finalgrade
+    grademax: Optional[float] = None
+    norm_grade: Optional[float] = None    # 0–100 normalize
+    gradepass: Optional[float] = None
+    norm_gradepass: Optional[float] = None
+    passed: Optional[bool] = None         # gradepass>0 ise geçti/kaldı; yoksa None
+    graded_date: Optional[str] = None     # "YYYY-MM-DD"
+
+
 class GradesPageResponse(BaseModel):
     ongoing_courses: List[OngoingCourseGrade]
     completed_courses: List[CompletedCourseDetail]
+    grade_items: List[GradeItemDetail] = []   # tek tek hesaplanabilir notlar (dash_grade_items)
     user_id: int
 
 

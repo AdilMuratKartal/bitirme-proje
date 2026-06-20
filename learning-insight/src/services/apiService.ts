@@ -203,25 +203,22 @@ export const apiService = {
 
       const courses = [...ongoing, ...completed];
 
-      const gradeItems: any[] = [];
-      courses.forEach(c => {
-        if (c.avg_grade > 0) {
-          gradeItems.push({
-            course: c.course_fullname,
-            code: c.course_shortname,
-            item: 'Dönem Sonu Notu',
-            type: 'exam',
-            weight: 100,
-            grade: Math.round(c.avg_grade),
-            max: 100,
-            date: '2026-06-15',
-          });
-        }
-      });
+      // Gerçek item-seviyesi notlar (dash_grade_items) — artık uydurmuyoruz
+      const realItems = (raw.grade_items || []).map((gi: any) => ({
+        course: gi.course_fullname,
+        code: (gi.course_fullname || '').split(' ')[0] || `CRS${gi.courseid}`,
+        item: gi.item_label,
+        type: gi.item_module || gi.item_type,
+        weight: null,
+        grade: gi.norm_grade != null ? Math.round(gi.norm_grade) : null,
+        max: 100,
+        date: gi.graded_date || '—',
+        passed: gi.passed,            // true=Geçti, false=Kaldı, null=eşik yok
+      }));
 
       const mapped = {
         courses,
-        gradeItems: gradeItems.length > 0 ? gradeItems : fallbackData.gradeItems,
+        gradeItems: realItems.length > 0 ? realItems : fallbackData.gradeItems,
         gradeTrend: fallbackData.gradeTrend,
       };
       return { data: mapped, fallback: false };

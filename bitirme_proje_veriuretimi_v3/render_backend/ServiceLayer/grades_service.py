@@ -16,6 +16,7 @@ import pandas as pd
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from schemas import (
     CompletedCourseDetail,
+    GradeItemDetail,
     GradesPageResponse,
     OngoingCourseGrade,
 )
@@ -54,8 +55,50 @@ def get_grades_page(uid: int, dao: MoodleDAO) -> GradesPageResponse:
     return GradesPageResponse(
         ongoing_courses=ongoing,
         completed_courses=completed,
+        grade_items=_grade_items(uid, dao),
         user_id=uid,
     )
+
+
+def _f(v) -> Optional[float]:
+    return float(v) if v is not None and pd.notna(v) else None
+
+
+def _b(v) -> Optional[bool]:
+    """dash_grade_items.passed → True/False/None (Postgres bool, sqlite int, ya da metin)."""
+    if v is None or (not isinstance(v, bool) and pd.isna(v)):
+        return None
+    if isinstance(v, str):
+        s = v.strip().lower()
+        if s in ("true", "1", "t"):  return True
+        if s in ("false", "0", "f"): return False
+        return None
+    return bool(v)
+
+
+def _grade_items(uid: int, dao: MoodleDAO) -> List[GradeItemDetail]:
+    """dash_grade_items'tan tek tek not kalemlerini GradeItemDetail listesine çevirir."""
+    df = dao.get_dash_grade_items(uid)
+    if df is None or df.empty:
+        return []
+    items: List[GradeItemDetail] = []
+    for _, r in df.iterrows():
+        items.append(GradeItemDetail(
+            courseid=int(r["courseid"]),
+            course_fullname=str(r["course_fullname"]),
+            itemid=int(r["itemid"]),
+            item_label=str(r["item_label"]),
+            item_type=str(r["item_type"]),
+            item_module=(None if pd.isna(r.get("item_module")) else str(r["item_module"])),
+            grade=_f(r.get("grade")),
+            grademax=_f(r.get("grademax")),
+            norm_grade=_f(r.get("norm_grade")),
+            gradepass=_f(r.get("gradepass")),
+            norm_gradepass=_f(r.get("norm_gradepass")),
+            passed=_b(r.get("passed")),
+            graded_date=(None if pd.isna(r.get("graded_date")) else str(r["graded_date"])),
+        ))
+    return items
 
 
 def _user_risk(uid: int, dao: MoodleDAO) -> Optional[dict]:
