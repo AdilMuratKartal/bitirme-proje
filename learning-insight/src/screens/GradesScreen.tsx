@@ -83,17 +83,19 @@ export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
             height={230}
           />
         </Card>
-        <Card title="GANO Eğilimi">
-          <p className="li-card__sub">
-            Dönemlik genel ortalama <span className="li-src">term snapshot</span>
-          </p>
-          <LineChart
-            labels={gradeTrend.terms}
-            datasets={[{ label: 'GANO', data: gradeTrend.gpa, color: 'var(--cat-emerald)' }]}
-            yMax={4}
-            height={230}
-          />
-        </Card>
+        {gradeTrend.terms.length > 0 && (
+          <Card title="Not Eğilimi (Aylık Ortalama)">
+            <p className="li-card__sub">
+              Aylık ortalama normalize not <span className="li-src">GET /api/student/me/grades · grade_items</span>
+            </p>
+            <LineChart
+              labels={gradeTrend.terms}
+              datasets={[{ label: 'Ortalama Not', data: gradeTrend.gpa, color: 'var(--cat-emerald)' }]}
+              yMax={100}
+              height={230}
+            />
+          </Card>
+        )}
       </div>
 
       <Card title="Gradebook" className="li-grades__table">

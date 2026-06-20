@@ -10,6 +10,7 @@ import { CourseDetailScreen } from './screens/CourseDetailScreen';
 import { GradesScreen } from './screens/GradesScreen';
 import { CalendarScreen } from './screens/CalendarScreen';
 import { CompetenciesScreen } from './screens/CompetenciesScreen';
+import { LearningPathScreen } from './screens/LearningPathScreen';
 import { ActivityHeatmapScreen } from './screens/ActivityHeatmapScreen';
 import { DatabaseViewerScreen } from './screens/DatabaseViewerScreen';
 import { PlaceholderScreen } from './screens/PlaceholderScreen';
@@ -205,8 +206,10 @@ const App: React.FC = () => {
       case 'lineage':
         screen = <DatabaseViewerScreen apiData={apiData} />;
         break;
-      case 'certificates':
       case 'learning':
+        screen = <LearningPathScreen apiData={apiData} />;
+        break;
+      case 'certificates':
       case 'account':
         screen = <PlaceholderScreen page={page} onNavigate={navigate} />;
         break;

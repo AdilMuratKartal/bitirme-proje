@@ -2,8 +2,6 @@ import React from 'react';
 import { Card, StatCard, Avatar, Tag } from '../components';
 import { LineChart, BarChart, DoughnutChart } from '../components/Charts';
 import { courseColors } from '../data/mockData';
-import certificateBadges from '../assets/assets/certificate_badges.png';
-import learningPathImg from '../assets/assets/learning_path.png';
 
 interface HomeScreenProps {
   onNavigate: (page: string) => void;
@@ -230,7 +228,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         <Card
           className="g-grades"
           title="Notlarım"
-          linkLabel="Notlarıma Git"
+          linkLabel="Not Detayına Git →"
           hoverable
           onLinkClick={(e) => {
             e.preventDefault();
@@ -262,27 +260,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
           <MiniCalendar events={events} />
         </Card>
 
-        {/* Certificates badge illustration */}
-        <Card
-          className="g-cert"
-          title="Sertifika ve Rozet"
-          linkLabel="Sertifikaya Git"
-          hoverable
-          onLinkClick={(e) => {
-            e.preventDefault();
-            onNavigate('certificates');
-          }}
-        >
-          <div className="li-imgwrap">
-            <img src={certificateBadges} alt="Sertifika ve Rozet" />
-          </div>
-        </Card>
-
-        {/* Activity Breakdown Chart - driven by competencies.activityBreakdown */}
+        {/* Activity Breakdown Chart - driven by competencies.activityBreakdown (önizleme) */}
         <Card
           className="g-comp"
           title="Öğrenme Etkinliği"
-          linkLabel="Yetkinliğe Git"
+          linkLabel="Yetkinlik Detayına Git →"
           hoverable
           onLinkClick={(e) => {
             e.preventDefault();
@@ -296,22 +278,6 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
             height={190}
             legend="right"
           />
-        </Card>
-
-        {/* Learning path illustration */}
-        <Card
-          className="g-path"
-          title="Öğrenme Patikası"
-          linkLabel="Öğrenme Patikasına Git"
-          hoverable
-          onLinkClick={(e) => {
-            e.preventDefault();
-            onNavigate('learning');
-          }}
-        >
-          <div className="li-imgwrap li-imgwrap--wide">
-            <img src={learningPathImg} alt="Öğrenme Patikası" />
-          </div>
         </Card>
       </div>
     </div>

@@ -48,7 +48,7 @@ export const CompetenciesScreen: React.FC<CompetenciesScreenProps> = ({ apiData 
       <div className="li-grades__charts">
         <Card title="Yetkinlik Profili">
           <p className="li-card__sub">
-            Ustalık seviyesi 0–100 <span className="li-src">mdl_competency_usercomp</span>
+            Ustalık seviyesi 0–100 <span className="li-src">GET /api/student/me/competencies</span>
           </p>
           <RadarChart
             labels={competenciesList.map((c) => c.name)}
@@ -59,7 +59,7 @@ export const CompetenciesScreen: React.FC<CompetenciesScreenProps> = ({ apiData 
 
         <Card title="Öğrenme Etkinliği Dağılımı">
           <p className="li-card__sub">
-            Etkinlik türüne göre çalışma dağılımı (%) <span className="li-src">mdl_modules + log</span>
+            Etkinlik türüne göre çalışma dağılımı (%) <span className="li-src">dash_module_status</span>
           </p>
           <DoughnutChart
             labels={breakdownList.map((a) => a.label)}
@@ -74,7 +74,7 @@ export const CompetenciesScreen: React.FC<CompetenciesScreenProps> = ({ apiData 
       <div className="li-grades__charts">
         <Card title="Yetkinlik Çerçevesi">
           <p className="li-card__sub">
-            Tanımlı akademik yetkinlikler <span className="li-src">mdl_competency</span>
+            Tanımlı akademik yetkinlikler <span className="li-src">GET /api/student/me/competencies</span>
           </p>
           <div className="li-tablewrap">
             <table className="li-table">
@@ -115,7 +115,7 @@ export const CompetenciesScreen: React.FC<CompetenciesScreenProps> = ({ apiData 
 
         <Card title="Aktivite Tamamlama Oranları">
           <p className="li-card__sub">
-            Ders bazlı tamamlanan etkinlikler <span className="li-src">mdl_course_modules_completion</span>
+            Ders bazlı tamamlanan etkinlikler <span className="li-src">dash_course_progress</span>
           </p>
           <div className="li-completion" style={{ padding: '8px 0' }}>
             {completionList.map((c, i) => {

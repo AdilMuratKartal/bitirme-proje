@@ -216,10 +216,29 @@ export const apiService = {
         passed: gi.passed,            // true=Geçti, false=Kaldı, null=eşik yok
       }));
 
+      // Gerçek not eğilimi: grade_items'ı aya göre grupla → aylık ortalama norm_grade (0–100)
+      const monthly: Record<string, { sum: number; n: number }> = {};
+      (raw.grade_items || []).forEach((gi: any) => {
+        if (gi.graded_date && gi.norm_grade != null) {
+          const ym = String(gi.graded_date).slice(0, 7); // YYYY-MM
+          if (!monthly[ym]) monthly[ym] = { sum: 0, n: 0 };
+          monthly[ym].sum += gi.norm_grade;
+          monthly[ym].n += 1;
+        }
+      });
+      const months = Object.keys(monthly).sort();
+      const realTrend =
+        months.length >= 2
+          ? {
+              terms: months.map((m) => { const [y, mo] = m.split('-'); return `${mo}.${y.slice(2)}`; }),
+              gpa: months.map((m) => Math.round(monthly[m].sum / monthly[m].n)),
+            }
+          : { terms: [], gpa: [] };   // yetersiz veri → kart gizlenir (mock gösterme)
+
       const mapped = {
         courses,
         gradeItems: realItems.length > 0 ? realItems : fallbackData.gradeItems,
-        gradeTrend: fallbackData.gradeTrend,
+        gradeTrend: realTrend,
       };
       return { data: mapped, fallback: false };
     }
