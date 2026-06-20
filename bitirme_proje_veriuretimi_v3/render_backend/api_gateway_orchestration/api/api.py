@@ -39,6 +39,7 @@ from schemas import (
     HeatmapResponse,
     HomepageResponse,
     LearningPathResponse,
+    ModuleStatusResponse,
 )
 from ServiceLayer.grades_service import get_grades_page
 from ServiceLayer.homepage_service import get_homepage
@@ -47,6 +48,7 @@ from ServiceLayer.competencies_service import get_competencies
 from ServiceLayer.events_service import get_events
 from ServiceLayer.heatmap_service import get_heatmap
 from ServiceLayer.course_analytics_service import get_course_analytics
+from ServiceLayer.modules_service import get_modules
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -228,3 +230,13 @@ async def course_analytics(
 ):
     """Kurs analitiği: assign/quiz tamamlama oranları + forum/page metrikleri (dash_course_analytics)."""
     return get_course_analytics(userid, dao)
+
+
+@app.get("/api/student/me/modules", response_model=ModuleStatusResponse)
+async def get_student_modules(
+    userid: Annotated[int, Depends(get_current_userid)],
+    dao: Annotated[MoodleDAO, Depends(get_dao)],
+):
+    """Kullanıcının tüm modül/aktivite durumları (dash_module_status)."""
+    return get_modules(userid, dao)
+

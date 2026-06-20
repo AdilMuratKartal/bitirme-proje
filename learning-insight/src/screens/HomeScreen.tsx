@@ -161,7 +161,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
         hoverable
         onLinkClick={(e) => {
           e.preventDefault();
-          onNavigate('competencies');
+          onNavigate('learning');
         }}
       >
         <p className="li-card__sub">

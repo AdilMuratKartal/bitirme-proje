@@ -69,7 +69,8 @@ const App: React.FC = () => {
         eventsRes,
         basicRes,
         heatmapRes,
-        courseAnalyticsRes
+        courseAnalyticsRes,
+        modulesRes
       ] = await Promise.all([
         apiService.getStudentHome(userUid),
         apiService.getStudentDashboard(userUid),
@@ -79,7 +80,8 @@ const App: React.FC = () => {
         apiService.getStudentEvents(userUid),
         apiService.getStudentBasic(userUid),
         apiService.getStudentHeatmap(userUid),
-        apiService.getStudentCourseAnalytics(userUid)
+        apiService.getStudentCourseAnalytics(userUid),
+        apiService.getStudentModules(userUid)
       ]);
 
       const isAnyFallback =
@@ -91,7 +93,8 @@ const App: React.FC = () => {
         eventsRes.fallback ||
         basicRes.fallback ||
         heatmapRes.fallback ||
-        courseAnalyticsRes.fallback;
+        courseAnalyticsRes.fallback ||
+        modulesRes.fallback;
 
       setApiData({
         home: homeRes.data,
@@ -102,7 +105,8 @@ const App: React.FC = () => {
         events: eventsRes.data,
         basic: basicRes.data,
         heatmap: heatmapRes.data,
-        courseAnalytics: courseAnalyticsRes.data
+        courseAnalytics: courseAnalyticsRes.data,
+        modules: modulesRes.data
       });
 
       if (isAnyFallback) {

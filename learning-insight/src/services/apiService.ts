@@ -395,5 +395,15 @@ export const apiService = {
     }
     return res;
   },
+
+  // 10. GET /api/student/me/modules
+  getStudentModules: async (_uid: string) => {
+    const fallbackData = mock.dash_04_module_status;
+    const res = await fetchWithRetry<any>(`/api/student/me/modules`, { items: fallbackData, user_id: 1042 });
+    if (!res.fallback && res.data && Array.isArray(res.data.items)) {
+      return { data: res.data.items, fallback: false };
+    }
+    return { data: fallbackData, fallback: res.fallback };
+  },
 };
 

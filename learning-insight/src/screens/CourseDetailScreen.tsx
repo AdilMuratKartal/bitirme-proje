@@ -10,6 +10,52 @@ interface CourseDetailScreenProps {
 
 const pct = (v: any) => (v != null ? `${Math.round(v)}%` : '—');
 
+const getModuleTypeLabel = (type: string) => {
+  switch (type?.toLowerCase()) {
+    case 'quiz': return 'Sınav / Quiz';
+    case 'assign': return 'Ödev';
+    case 'forum': return 'Forum';
+    case 'resource': return 'Okuma (Kaynak)';
+    case 'page': return 'Sayfa';
+    case 'book': return 'Kitap';
+    default: return type || 'Modül';
+  }
+};
+
+const getModuleTypeTone = (type: string) => {
+  switch (type?.toLowerCase()) {
+    case 'quiz': return 'purple';
+    case 'assign': return 'orange';
+    case 'forum': return 'sky';
+    case 'resource': case 'page': case 'book': return 'blue';
+    default: return 'gray';
+  }
+};
+
+const formatDate = (ts: number | null) => {
+  if (!ts) return '—';
+  return new Date(ts * 1000).toLocaleDateString('tr-TR', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric'
+  });
+};
+
+const formatStrDate = (dateStr: string | null) => {
+  if (!dateStr) return '';
+  try {
+    const [y, m, d] = dateStr.split('-');
+    const monthIndex = parseInt(m, 10) - 1;
+    const months = [
+      'Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran',
+      'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'
+    ];
+    return `${parseInt(d, 10)} ${months[monthIndex]} ${y}`;
+  } catch (e) {
+    return dateStr;
+  }
+};
+
 export const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ courseId, onBack, apiData }) => {
   const courses = apiData.home.courses || [];
   const course = courses.find((c: any) => c.courseid === courseId);
@@ -18,8 +64,8 @@ export const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ courseId
   // Gerçek kurs analitiği (dash_course_analytics)
   const analytics = (apiData.courseAnalytics || []).find((a: any) => a.courseid === courseId);
 
-  // Bu kursun gerçek not kalemleri (dash_grade_items, courseid ile filtre)
-  const items = (apiData.grades?.gradeItems || []).filter((g: any) => g.courseid === courseId);
+  // Bu kursun modülleri (dash_module_status, courseid ile filtre)
+  const modules = (apiData.modules || []).filter((m: any) => m.courseid === courseId);
 
   if (!course) {
     return (
@@ -84,45 +130,66 @@ export const CourseDetailScreen: React.FC<CourseDetailScreenProps> = ({ courseId
         </Card>
       )}
 
-      {/* Bu kursun gerçek not kalemleri (dash_grade_items) */}
-      <Card title="Bu Dersin Notları">
+      {/* Bu kursun aktiviteleri (dash_module_status) */}
+      <Card title="Bu Dersin Aktiviteleri">
         <p className="li-card__sub">
-          Hesaplanabilir ödev/quiz notları + geçti/kaldı <span className="li-src">GET /api/student/me/grades · grade_items</span>
+          Kurs modülleri, görüntüleme ve tamamlama durumları <span className="li-src">GET /api/student/me/modules</span>
         </p>
         <div className="li-tablewrap">
           <table className="li-table">
             <thead>
               <tr>
-                <th>Kalem</th>
-                <th>Tür</th>
-                <th className="ta-r">Not</th>
-                <th className="ta-c">Durum</th>
-                <th>Tarih</th>
+                <th>Aktivite Adı</th>
+                <th>Aktivite Türü</th>
+                <th className="ta-c">Tamamlanma Durumu</th>
+                <th>Son İşlem / Beklenen Tarih</th>
               </tr>
             </thead>
             <tbody>
-              {items.length === 0 ? (
+              {modules.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="ta-c li-table__muted">
-                    Bu ders için hesaplanabilir not kalemi bulunamadı.
+                  <td colSpan={4} className="ta-c li-table__muted">
+                    Bu ders için aktivite bulunamadı.
                   </td>
                 </tr>
               ) : (
-                items.map((g: any, i: number) => (
+                modules.map((m: any, i: number) => (
                   <tr key={i}>
-                    <td className="li-table__name">{g.item}</td>
-                    <td><Tag tone="gray" variant="soft" size="sm">{g.type}</Tag></td>
-                    <td className="ta-r li-num li-table__grade">{g.grade}<span className="li-table__max">/{g.max}</span></td>
+                    <td className="li-table__name">{m.display_name}</td>
+                    <td>
+                      <Tag tone={getModuleTypeTone(m.module_type)} variant="soft" size="sm">
+                        {getModuleTypeLabel(m.module_type)}
+                      </Tag>
+                    </td>
                     <td className="ta-c">
-                      {g.passed === true ? (
-                        <Tag tone="green" variant="soft" size="sm">Geçti</Tag>
-                      ) : g.passed === false ? (
-                        <Tag tone="red" variant="soft" size="sm">Kaldı</Tag>
+                      {m.is_completed ? (
+                        <Tag tone="green" variant="soft" size="sm">Tamamlandı</Tag>
                       ) : (
-                        <span className="li-table__muted">—</span>
+                        <Tag tone="amber" variant="soft" size="sm">Tamamlanmadı</Tag>
                       )}
                     </td>
-                    <td className="li-num li-table__muted">{g.date}</td>
+                    <td className="li-num li-table__muted">
+                      {m.is_completed ? (
+                        <span style={{ color: 'var(--success)' }}>
+                          Tamamlandı: {formatDate(m.completion_time)}
+                        </span>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                          {m.first_view_time ? (
+                            <span style={{ fontSize: '12px' }}>
+                              Görüntülendi: {formatDate(m.first_view_time)}
+                            </span>
+                          ) : null}
+                          {m.expected_date ? (
+                            <span style={{ color: 'var(--danger)', fontSize: '11px', fontWeight: 'bold' }}>
+                              Beklenen: {formatStrDate(m.expected_date)}
+                            </span>
+                          ) : (
+                            !m.first_view_time && <span>—</span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

@@ -229,3 +229,23 @@ class CourseAnalyticsItem(BaseModel):
 class CourseAnalyticsResponse(BaseModel):
     courses: List[CourseAnalyticsItem]
     user_id: int
+
+
+# ─────────────────────────────────────────────────────────────────
+# MODULE STATUS (dash_module_status)
+# ─────────────────────────────────────────────────────────────────
+
+class ModuleStatusItem(BaseModel):
+    courseid: int
+    cmid: int
+    module_type: str
+    display_name: str
+    is_completed: bool
+    completion_time: Optional[int] = None
+    first_view_time: Optional[int] = None
+    expected_date: Optional[str] = None
+
+
+class ModuleStatusResponse(BaseModel):
+    items: List[ModuleStatusItem]
+    user_id: int
