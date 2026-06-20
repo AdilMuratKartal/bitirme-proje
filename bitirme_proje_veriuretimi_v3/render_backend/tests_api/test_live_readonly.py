@@ -51,3 +51,20 @@ def test_dashboard_risk_blogu_mevcut(client):
     blk = r.json()["risk_premodel_analysis"]
     for f in ("risk_score", "risk_level", "pass_probability", "will_pass"):
         assert f in blk          # alan var; degeri None olabilir (freshness=pending)
+
+
+# ── Item-seviyesi notlar (dash_grade_items): backend redeploy sonrasi ─
+@requires_token
+def test_grades_grade_items(client):
+    r = client.get("/api/student/me/grades")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    if "grade_items" not in body:
+        pytest.skip("Canli backend henuz grade_items icermiyor (redeploy bekleniyor)")
+    items = body["grade_items"]
+    assert isinstance(items, list)
+    if items:                     # veri varsa kalem semasi + gecti/gecmedi anlamlari
+        gi = items[0]
+        for k in ("courseid", "item_label", "item_type", "norm_grade", "passed"):
+            assert k in gi, f"grade_items kaleminde '{k}' yok"
+        assert all(it.get("passed") in (True, False, None) for it in items)
