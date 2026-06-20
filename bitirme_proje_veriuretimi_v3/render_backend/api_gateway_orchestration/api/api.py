@@ -27,6 +27,15 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 _RENDER_BACKEND = os.path.dirname(os.path.dirname(os.path.dirname(_HERE)))
 sys.path.insert(0, _RENDER_BACKEND)
 
+# Support local testing by loading .env
+try:
+    from dotenv import load_dotenv
+    env_path = os.path.join(_RENDER_BACKEND, ".env")
+    if os.path.exists(env_path):
+        load_dotenv(env_path)
+except ImportError:
+    pass
+
 from dependencies import get_dao
 from Moodle_DAO.moodle_dao_schema import MoodleDAO
 from api_gateway_orchestration.api.gateway import verify_firebase_token
@@ -49,6 +58,7 @@ from ServiceLayer.events_service import get_events
 from ServiceLayer.heatmap_service import get_heatmap
 from ServiceLayer.course_analytics_service import get_course_analytics
 from ServiceLayer.modules_service import get_modules
+from ServiceLayer.risk_service import calculate_and_save_risk
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -100,7 +110,8 @@ def get_current_userid(
 
 def _build_dashboard(userid: int, dao: MoodleDAO) -> dict:
     """Risk (dash_risk) + temel değerler (dash_user_stats) → dashboard yanıtı."""
-    risk = dao.get_dash_risk(userid)
+    from ServiceLayer.risk_service import get_or_calculate_user_risk
+    risk = get_or_calculate_user_risk(userid, dao)
     stats = dao.get_dash_user_stats(userid) or {}
 
     if risk:
@@ -111,7 +122,20 @@ def _build_dashboard(userid: int, dao: MoodleDAO) -> dict:
             "will_pass":        risk.get("will_pass"),
             "predicted_grade":  risk.get("predicted_grade"),
         }
+        
+        # Check if the calculated prediction is fresh or stale
         freshness = "fresh"
+        computed_at_str = risk.get("computed_at")
+        if computed_at_str:
+            try:
+                import datetime
+                computed_at_dt = datetime.datetime.fromisoformat(computed_at_str)
+                now_dt = datetime.datetime.now(datetime.timezone.utc)
+                age_days = (now_dt - computed_at_dt).days
+                if age_days >= 7:
+                    freshness = "stale"
+            except Exception:
+                pass
     else:
         risk_block = {
             "risk_score": None, "risk_level": None,

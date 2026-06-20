@@ -191,3 +191,15 @@ class SelectMixin:
             return None
         finally:
             session.close()
+
+    def get_dash_features(self, userid: int) -> pd.DataFrame:
+        """dash_features tablosundan kullanıcının tüm kurs feature satırları."""
+        session = self._session()
+        try:
+            return pd.read_sql(
+                text("SELECT * FROM dash_features WHERE userid = :uid"),
+                session.bind,
+                params={"uid": userid},
+            )
+        finally:
+            session.close()

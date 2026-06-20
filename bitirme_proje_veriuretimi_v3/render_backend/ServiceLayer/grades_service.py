@@ -35,7 +35,22 @@ _COMPLETED_THRESHOLD = 99.5
 def get_grades_page(uid: int, dao: MoodleDAO) -> GradesPageResponse:
     progress_df = dao.get_dash_course_progress(uid)
     risk = _user_risk(uid, dao)
-    freshness = "fresh" if risk else "pending"
+    
+    freshness = "fresh"
+    if risk:
+        computed_at_str = risk.get("computed_at")
+        if computed_at_str:
+            try:
+                import datetime
+                computed_at_dt = datetime.datetime.fromisoformat(computed_at_str)
+                now_dt = datetime.datetime.now(datetime.timezone.utc)
+                age_days = (now_dt - computed_at_dt).days
+                if age_days >= 7:
+                    freshness = "stale"
+            except Exception:
+                pass
+    else:
+        freshness = "pending"
 
     ongoing: List[OngoingCourseGrade] = []
     completed: List[CompletedCourseDetail] = []
@@ -102,12 +117,10 @@ def _grade_items(uid: int, dao: MoodleDAO) -> List[GradeItemDetail]:
 
 
 def _user_risk(uid: int, dao: MoodleDAO) -> Optional[dict]:
-    """dash_risk precompute (Faz 2) varsa öğrenci risk dict'ini döner; yoksa None."""
-    getter = getattr(dao, "get_dash_risk", None)
-    if getter is None:
-        return None
+    """dash_risk precompute veya on-demand hesaplama."""
+    from ServiceLayer.risk_service import get_or_calculate_user_risk
     try:
-        return getter(uid)
+        return get_or_calculate_user_risk(uid, dao)
     except Exception:
         return None
 
