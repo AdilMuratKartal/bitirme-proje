@@ -58,6 +58,8 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
         ))
 
     overall = round(total_pct / len(COMPETENCY_MODULE_TYPES), 1) if competencies else 0.0
+    
+    style_recs = generate_learning_style_recommendations(competencies)
 
     # 5. Kurs bazlı tamamlanan etkinlikler
     progress_df = dao.get_dash_course_progress(uid)
@@ -79,6 +81,7 @@ def get_competencies(uid: int, dao: MoodleDAO) -> CompetenciesResponse:
 
     return CompetenciesResponse(
         competencies=competencies,
+        learning_style_recommendations=style_recs,
         predicted_class=predicted_class,
         overall_completion=overall,
         completion_by_course=completion_by_course,
@@ -101,3 +104,43 @@ def _predicted_class(uid: int, dao: MoodleDAO) -> Optional[str]:
     if will_pass is None:
         return None
     return "Başarılı" if will_pass else "Başarısız"
+
+
+def generate_learning_style_recommendations(competencies: List[CompetencyItem]) -> List[str]:
+    """Mevcut yetkinlik yüzdelerine göre (radar grafiği yerine) sunulacak Öğrenme Stili önerilerini üretir."""
+    if not competencies:
+        return []
+    
+    sorted_comps = sorted(competencies, key=lambda c: c.percentage, reverse=True)
+    strongest = sorted_comps[0]
+    weakest = sorted_comps[-1]
+    
+    recs = []
+    
+    # 1. En güçlü alan
+    if strongest.percentage > 0:
+        recs.append(f"Öğrenme stilinize göre en güçlü olduğunuz alan '{strongest.type}'. Bu alandaki motivasyonunuzu korumaya devam edin.")
+        
+    # 2. En zayıf alan ve alt eşik kontrolü
+    if weakest.percentage < 100:
+        if weakest.percentage < 30:
+            if weakest.type == "OKUMA":
+                recs.append("Okuma materyallerine (PDF/Sayfa) ayırdığınız zaman oldukça düşük. Daha fazla zaman ayırmalısınız.")
+            elif weakest.type == "FORUM":
+                recs.append("Forum tartışmalarına katılımınız çok zayıf. Diğer öğrencilerle etkileşime geçmek öğrenmenizi pekiştirir.")
+            elif weakest.type == "İZLEME":
+                recs.append("Video dersleri izleme oranınız kritik seviyede. Görsel materyallerden daha çok yararlanmalısınız.")
+            elif weakest.type == "ÖDEV":
+                recs.append("Sınav ve ödev pratikleriniz yetersiz. Akademik başarınız için bu alanı acilen geliştirmelisiniz.")
+            else:
+                recs.append(f"'{weakest.type}' alanındaki katılımınız kritik derecede düşük. Bu alana acil odaklanmalısınız.")
+        else:
+            recs.append(f"'{weakest.type}' alanındaki katılımınız diğerlerine göre daha düşük. Bu alana odaklanarak dengeli bir akademik gelişim sağlayabilirsiniz.")
+            
+    # 3. Genel ortalama uyarısı
+    avg_pct = sum(c.percentage for c in competencies) / len(competencies)
+    if avg_pct < 50:
+        recs.append("Genel olarak tüm yetkinlik alanlarında katılımınızı artırmanız akademik başarınızı yükseltecektir.")
+        
+    return recs
+

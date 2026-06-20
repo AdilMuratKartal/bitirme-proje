@@ -21,6 +21,7 @@ interface CompetenciesScreenProps {
         completed: number;
         total: number;
       }>;
+      learning_style_recommendations?: string[];
     };
   };
 }
@@ -46,15 +47,15 @@ export const CompetenciesScreen: React.FC<CompetenciesScreenProps> = ({ apiData 
       </div>
 
       <div className="li-grades__charts">
-        <Card title="Yetkinlik Profili">
+        <Card title="Öğrenme Stili Analizi">
           <p className="li-card__sub">
-            Ustalık seviyesi 0–100 <span className="li-src">GET /api/student/me/competencies</span>
+            Aktivite katılımınıza göre güçlü ve geliştirilmesi gereken yönleriniz <span className="li-src">GET /api/student/me/competencies</span>
           </p>
-          <RadarChart
-            labels={competenciesList.map((c) => c.name)}
-            data={competenciesList.map((c) => c.value)}
-            height={280}
-          />
+          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {(compData.learning_style_recommendations || []).map((rec: string, idx: number) => (
+              <li key={idx}>{rec}</li>
+            ))}
+          </ul>
         </Card>
 
         <Card title="Öğrenme Etkinliği Dağılımı">

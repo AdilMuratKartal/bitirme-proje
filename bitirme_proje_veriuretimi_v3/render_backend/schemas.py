@@ -117,6 +117,7 @@ class CourseCompletionItem(BaseModel):
 
 class CompetenciesResponse(BaseModel):
     competencies: List[CompetencyItem]   # sabit 4 eleman
+    learning_style_recommendations: List[str] = [] # Öğrenme stili kural tabanlı önerileri
     predicted_class: Optional[str]       # risk_premodel: "Başarılı" / "Başarısız"
     overall_completion: float            # ortalama %
     completion_by_course: Optional[List[CourseCompletionItem]] = None
