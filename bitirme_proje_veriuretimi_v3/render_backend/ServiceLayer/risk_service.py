@@ -13,6 +13,66 @@ logger = logging.getLogger(__name__)
 _SESSION = None
 _FEATURES = None
 
+def generate_rule_based_recommendations(features_dict: dict) -> list[str]:
+    """
+    Korelasyon analizi sonucunda belirlenen özelliklerin başarıya etkisine (label)
+    göre kural tabanlı öneriler sunar.
+    Korelasyon ağırlıkları (02_korelasyon.csv bazlı):
+    - n_aktif_gun: %44
+    - n_sessions: %40
+    - n_modul_cesit_pctile: %22
+    - max_hissizlik: -%20
+    - n_perf_log: %16
+    - weekend_ratio: %15
+    """
+    recs = []
+    
+    n_aktif_gun = features_dict.get("n_aktif_gun", 0.0)
+    n_sessions = features_dict.get("n_sessions", 0.0)
+    n_modul_cesit_pctile = features_dict.get("n_modul_cesit_pctile", 0.0)
+    max_hissizlik = features_dict.get("max_hissizlik", 0.0)
+    n_perf_log = features_dict.get("n_perf_log", 0.0)
+    weekend_ratio = features_dict.get("weekend_ratio", 0.0)
+    
+    if n_aktif_gun < 5:
+        recs.append({
+            "weight": 44,
+            "text": "Platforma giriş yaptığınız gün sayısını artırmak, başarınızı %44'e varan oranda olumlu etkileyecek en önemli faktördür."
+        })
+        
+    if n_sessions < 10:
+        recs.append({
+            "weight": 40,
+            "text": "Sisteme daha sık oturum açmak başarı ile yüksek oranda (%40) ilişkilidir."
+        })
+        
+    if n_modul_cesit_pctile < 0.5:
+        recs.append({
+            "weight": 22,
+            "text": "Farklı türdeki ders materyallerine (video, doküman, forum) daha fazla göz atmanız başarı şansınızı %22 artırabilir."
+        })
+        
+    if max_hissizlik > 7:
+        recs.append({
+            "weight": 20,
+            "text": "Derslere uzun süre ara vermeniz (7 günden fazla hareketsizlik) başarınızı %20 oranında negatif etkiliyor. İstikrarlı olun."
+        })
+        
+    if n_perf_log < 10:
+        recs.append({
+            "weight": 16,
+            "text": "Ödev ve Quiz gibi değerlendirme aktivitelerine katılımınızı artırmak başarınızı %16 etkiler."
+        })
+        
+    if weekend_ratio < 0.1:
+        recs.append({
+            "weight": 15,
+            "text": "Hafta sonları da platforma girip küçük tekrarlar yapmak başarı şansınızı %15 destekler."
+        })
+        
+    recs.sort(key=lambda x: x["weight"], reverse=True)
+    return [r["text"] for r in recs[:3]]
+
 def _get_onnx_session_and_features():
     global _SESSION, _FEATURES
     if _SESSION is None:
@@ -107,6 +167,15 @@ def get_or_calculate_user_risk(userid: int, dao: MoodleDAO) -> dict | None:
                 risk = new_risk
         except Exception as e:
             logger.error(f"On-demand risk calculation failed for user {userid}: {e}")
+            
+    # Dinamik olarak kural tabanlı önerileri ekle
+    if risk:
+        features_df = dao.get_dash_features(userid)
+        if not features_df.empty:
+            features_dict = dict(features_df.iloc[0])
+            risk["recommendations"] = generate_rule_based_recommendations(features_dict)
+        else:
+            risk["recommendations"] = []
             
     return risk
 

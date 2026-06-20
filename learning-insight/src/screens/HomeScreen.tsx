@@ -221,6 +221,16 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ onNavigate, apiData }) =
                 </Tag>
               )}
             </div>
+            {risk && risk.recommendations && risk.recommendations.length > 0 && (
+              <div style={{ marginTop: '12px', paddingTop: '16px', borderTop: '1px dashed var(--border)' }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', display: 'block', marginBottom: '10px' }}>Akıllı Öneriler:</span>
+                <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {risk.recommendations.map((rec: string, idx: number) => (
+                    <li key={idx}>{rec}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </Card>
 

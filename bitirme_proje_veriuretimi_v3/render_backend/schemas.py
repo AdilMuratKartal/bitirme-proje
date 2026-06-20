@@ -63,6 +63,7 @@ class GradesPageResponse(BaseModel):
     ongoing_courses: List[OngoingCourseGrade]
     completed_courses: List[CompletedCourseDetail]
     grade_items: List[GradeItemDetail] = []   # tek tek hesaplanabilir notlar (dash_grade_items)
+    recommendations: List[str] = []           # Kullanıcıya özel dinamik risk önerileri
     user_id: int
 
 

@@ -22,7 +22,7 @@ const TYPE_TONE: Record<string, string> = { quiz: 'sky', exam: 'purple', assign:
 const TYPE_LABEL: Record<string, string> = { quiz: 'Quiz', exam: 'Sınav', assign: 'Ödev' };
 
 export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
-  const { courses, gradeItems, gradeTrend } = apiData.grades;
+  const { courses, gradeItems, gradeTrend, recommendations } = apiData.grades;
 
   const gradedCourses = (courses || []).filter((c: any) => c.avg_grade > 0);
   const avg = gradedCourses.length > 0
@@ -70,6 +70,19 @@ export const GradesScreen: React.FC<GradesScreenProps> = ({ apiData }) => {
           icon={<span className="material-icons">school</span>}
         />
       </div>
+      
+      {recommendations && recommendations.length > 0 && (
+        <Card title="Akademik Gelişim Önerileri" style={{ marginBottom: '24px', borderLeft: '4px solid var(--primary)' }}>
+          <p className="li-card__sub" style={{ margin: '-8px 0 12px 0' }}>
+            Not ve katılım istatistiklerinize dayanarak başarı şansınızı artıracak faktörler <span className="li-src">GET /api/student/me/grades</span>
+          </p>
+          <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {recommendations.map((rec: string, idx: number) => (
+              <li key={idx}>{rec}</li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <div className="li-grades__charts">
         <Card title="Ders Bazlı Not">

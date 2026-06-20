@@ -121,6 +121,7 @@ def _build_dashboard(userid: int, dao: MoodleDAO) -> dict:
             "pass_probability": risk.get("pass_probability"),
             "will_pass":        risk.get("will_pass"),
             "predicted_grade":  risk.get("predicted_grade"),
+            "recommendations":  risk.get("recommendations", []),
         }
         
         # Check if the calculated prediction is fresh or stale

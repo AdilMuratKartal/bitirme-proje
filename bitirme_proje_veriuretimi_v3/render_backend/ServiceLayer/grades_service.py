@@ -71,6 +71,7 @@ def get_grades_page(uid: int, dao: MoodleDAO) -> GradesPageResponse:
         ongoing_courses=ongoing,
         completed_courses=completed,
         grade_items=_grade_items(uid, dao),
+        recommendations=risk.get("recommendations", []) if risk else [],
         user_id=uid,
     )
 
