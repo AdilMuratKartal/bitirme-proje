@@ -358,6 +358,7 @@ export const apiService = {
         competencies,
         activityBreakdown,
         completionByCourse: completionByCourse.length > 0 ? completionByCourse : fallbackData.completionByCourse,
+        learning_style_recommendations: raw.learning_style_recommendations || [],
       };
       return { data: mapped, fallback: false };
     }
