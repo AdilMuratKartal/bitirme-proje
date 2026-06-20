@@ -205,6 +205,7 @@ export const apiService = {
 
       // Gerçek item-seviyesi notlar (dash_grade_items) — artık uydurmuyoruz
       const realItems = (raw.grade_items || []).map((gi: any) => ({
+        courseid: gi.courseid,
         course: gi.course_fullname,
         code: (gi.course_fullname || '').split(' ')[0] || `CRS${gi.courseid}`,
         item: gi.item_label,
