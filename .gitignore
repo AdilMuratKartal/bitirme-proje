@@ -27,3 +27,9 @@ __pycache__/
 .venv/
 
 20040301052_FİNAL
+### Tests & DBs
+bitirme_proje_veriuretimi_v3/render_backend/tests_api/
+bitirme_proje_veriuretimi_v3/tests/
+*.sqlite
+*.sqlite3
+*.db
