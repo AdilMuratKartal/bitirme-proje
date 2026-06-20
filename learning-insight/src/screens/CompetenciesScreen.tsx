@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, Tag } from '../components';
-import { RadarChart, DoughnutChart } from '../components/Charts';
+import { DoughnutChart } from '../components/Charts';
 
 interface CompetenciesScreenProps {
   apiData: {
