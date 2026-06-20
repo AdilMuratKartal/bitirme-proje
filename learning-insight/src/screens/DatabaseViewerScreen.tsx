@@ -1,18 +1,12 @@
 import React, { useState } from 'react';
 import { Card } from '../components';
-import {
-  dash_04_module_status,
-} from '../data/mockData';
 
 interface DatabaseViewerScreenProps {
   apiData: {
-    learningPath: {
-      dataset: any[];
-    };
+    learningPath: { dataset: any[] };
     basic: any;
-    grades: {
-      courses: any[];
-    };
+    dashboard?: any;
+    grades: { courses: any[]; gradeItems?: any[] };
     courseAnalytics: any[];
     heatmap: any[];
     events: any[];
@@ -96,7 +90,7 @@ export const DatabaseViewerScreen: React.FC<DatabaseViewerScreenProps> = ({ apiD
       pk: '(userid, cmid)',
       source: 'mdl_course_modules + mdl_modules + mdl_grade_items + mdl_log',
       dependency: 'Moodle ham tablolarına bağlı (En ağır, ilk çalışır)',
-      rows: dash_04_module_status,
+      rows: [], // Büyük tablo: istemciye satır olarak yüklenmez (türetilmiş görünümlerde kullanılır)
       headers: [
         'userid',
         'courseid',
@@ -124,28 +118,16 @@ export const DatabaseViewerScreen: React.FC<DatabaseViewerScreenProps> = ({ apiD
       dependency: 'dash_04 ve log\'a bağımlı',
       rows: apiData.courseAnalytics || [],
       headers: [
-        'userid',
         'courseid',
-        'most_common_module_type',
-        'assign_total',
-        'assign_completed',
         'assign_completion_rate',
-        'quiz_total',
-        'quiz_completed',
         'quiz_completion_rate',
-        'resource_total',
-        'resource_viewed',
-        'resource_view_rate',
+        'avg_daily_minutes',
         'forum_total',
         'forum_interactions',
         'forum_interaction_rate',
         'page_total',
         'page_viewed',
         'page_view_rate',
-        'avg_daily_minutes',
-        'total_active_days',
-        'total_events',
-        'last_activity_date',
       ],
     },
     {
@@ -179,6 +161,24 @@ export const DatabaseViewerScreen: React.FC<DatabaseViewerScreenProps> = ({ apiD
         'is_completed',
       ],
     },
+    {
+      id: 'dash_08',
+      name: 'dash_risk.csv',
+      pk: 'user_id',
+      source: 'dash_features + student_success modeli (offline, XGBoost 15-feature)',
+      dependency: 'Model çıktısı (offline batch inference)',
+      rows: apiData.dashboard?.risk_premodel_analysis ? [apiData.dashboard.risk_premodel_analysis] : [],
+      headers: ['risk_score', 'risk_level', 'pass_probability', 'will_pass', 'predicted_grade'],
+    },
+    {
+      id: 'dash_09',
+      name: 'dash_grade_items.csv',
+      pk: '(userid, itemid)',
+      source: 'mdl_grade_grades + mdl_grade_items (hidden=0, excluded=0, gradetype=1)',
+      dependency: 'Moodle not tablolarına bağlı',
+      rows: apiData.grades?.gradeItems || [],
+      headers: ['courseid', 'course', 'item', 'type', 'grade', 'max', 'passed', 'date'],
+    },
   ];
 
   const currentTable = tables.find((t) => t.id === activeTab) || tables[0];
@@ -193,7 +193,7 @@ export const DatabaseViewerScreen: React.FC<DatabaseViewerScreenProps> = ({ apiD
     <div className="li-page">
       <div className="li-page__head">
         <h1>Veri İletim Hattı (Data Lineage)</h1>
-        <p>Moodle LMS veri tabanından türetilen ve önyüze beslenen 7 dashboard tablosunun detayları</p>
+        <p>Moodle LMS veri tabanından türetilen ve önyüze beslenen dashboard precompute tablolarının detayları</p>
       </div>
 
       {/* Tabs */}
@@ -267,6 +267,13 @@ export const DatabaseViewerScreen: React.FC<DatabaseViewerScreenProps> = ({ apiD
               </tr>
             </thead>
             <tbody>
+              {currentTable.rows.length === 0 && (
+                <tr>
+                  <td colSpan={currentTable.headers.length} className="ta-c li-table__muted" style={{ padding: '16px' }}>
+                    Bu tablo bu görünüme satır olarak yüklenmiyor (büyük tablo / yalnız türetilmiş görünümlerde kullanılır).
+                  </td>
+                </tr>
+              )}
               {currentTable.rows.map((row, idx) => (
                 <tr key={idx}>
                   {currentTable.headers.map((h) => (
